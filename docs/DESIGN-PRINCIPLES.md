@@ -2,6 +2,10 @@
 
 GlassWeb is for people who want to understand a complex web system without first learning the choreography of DevTools. The interface should feel technically serious, visually surprising, and immediately legible.
 
+## Answer first; complexity must be earned
+
+The default experience is one human question, one short answer, four ordinary-language steps, and why the result matters. Technical layers, raw identities, certainty terminology, and the complete graph appear only after the person asks for proof. The five-layer X-ray is the payoff, not the entrance exam.
+
 ## Keep the real interface as the anchor
 
 The captured page is not a thumbnail that disappears once analysis starts. It is layer zero. Every explanation begins at something a person can see or touch and expands outward from that fixed position.

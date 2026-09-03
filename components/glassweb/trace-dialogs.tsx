@@ -27,6 +27,34 @@ const certaintyIcon = {
   unknown: HelpCircle,
 } satisfies Record<EvidenceCertainty, typeof CheckCircle2>;
 
+const certaintyLabel: Record<EvidenceCertainty, string> = {
+  observed: 'We saw it',
+  correlated: 'Best match',
+  inferred: 'Likely',
+  unknown: "We can't tell",
+};
+
+const sourceLabel: Record<GlassWebTrace['evidence'][number]['source'], string> = {
+  dom: 'The page',
+  performance: 'Browser timing',
+  instrumentation: 'Recorded action',
+  cdp: 'Browser tools',
+  rule: 'GlassWeb rule',
+  model: 'Model result',
+};
+
+const relationLabel: Record<GlassWebTrace['relations'][number]['kind'], string> = {
+  contains: 'contains',
+  renders: 'shows',
+  'listens-to': 'reacts to',
+  triggers: 'starts',
+  initiates: 'sends',
+  returns: 'comes back to',
+  mutates: 'changes',
+  'navigates-to': 'opens',
+  'provided-by': 'handled by',
+};
+
 function ModalShell({
   open,
   onOpenChange,
@@ -134,54 +162,48 @@ export function CaptureDialog({
 }) {
   return (
     <ModalShell
-      description="The GlassWeb recorder watches only the tab you activate, strips secret values before storage, and exports a portable evidence trace."
+      description="Start watching, do the one thing you want explained, then open the result. Everything happens on your computer."
       footer={
         <>
           <Button variant="outline" onClick={onImport}>
-            <FileJson2 data-icon="inline-start" /> Import a trace
+            <FileJson2 data-icon="inline-start" /> I have a recording
           </Button>
           <a
             className={cn(buttonVariants({ variant: 'default' }))}
             download
             href="/glassweb-recorder.zip"
           >
-            <Download className="size-4" /> Download recorder
+            <Download className="size-4" /> Get the Chrome recorder
           </a>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title="Capture one real browser session"
+      title="Let GlassWeb watch one quick test"
     >
       <>
         <ol className="capture-steps">
           <li>
             <span>01</span>
             <div>
-              <strong>Load the recorder</strong>
-              <p>
-                Install the unpacked Chrome extension from the downloaded
-                folder.
-              </p>
+              <strong>Add the recorder</strong>
+              <p>One-time Chrome setup on your computer.</p>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
-              <strong>Record one journey</strong>
-              <p>
-                Start capture, use the page normally, then stop when the outcome
-                appears.
-              </p>
+              <strong>Do one thing</strong>
+              <p>Click the button, submit the form, or reproduce the problem.</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
-              <strong>Open the evidence</strong>
+              <strong>See the answer</strong>
               <p>
-                Import the exported <code>.glassweb.json</code> file here.
-                Replays work offline.
+                Open the saved recording here. GlassWeb turns it into a simple
+                story.
               </p>
             </div>
           </li>
@@ -190,8 +212,8 @@ export function CaptureDialog({
         <div className="flex items-start gap-2 border border-primary/25 bg-primary/6 p-3 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
           <p>
-            Cookie values, authorization headers, form values, bodies, and URL
-            query values are excluded by default.
+            GlassWeb never saves passwords, form text, cookies, message bodies,
+            or private URL values.
           </p>
         </div>
       </>
@@ -225,12 +247,12 @@ export function EvidenceDialog({
       description={entity.description}
       eyebrow={
         <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
-          <Icon className="size-3" /> {entity.certainty} evidence
+          <Icon className="size-3" /> {certaintyLabel[entity.certainty]}
         </div>
       }
       footer={
         <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Close evidence
+          Got it
         </Button>
       }
       onOpenChange={onOpenChange}
@@ -240,18 +262,18 @@ export function EvidenceDialog({
     >
       <>
         <div className="evidence-raw">
-          <span>Technical identity</span>
+          <span>Technical name - optional</span>
           <code>{entity.technicalLabel}</code>
         </div>
 
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            Evidence ledger
+            Why GlassWeb believes this
           </p>
           <div className="space-y-2">
             {directEvidence.map((item) => (
               <div className="evidence-source" key={item.id}>
-                <span>{item.source}</span>
+                <span>{sourceLabel[item.source]}</span>
                 <p>{item.explanation}</p>
                 <small>
                   {item.eventIds.length > 0
@@ -265,7 +287,7 @@ export function EvidenceDialog({
 
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            Connected evidence
+            What this connects to
           </p>
           <div className="space-y-2">
             {connected.length > 0 ? (
@@ -277,18 +299,18 @@ export function EvidenceDialog({
                 );
                 return (
                   <div className="evidence-relation" key={relation.id}>
-                    <span>{relation.kind.replaceAll('-', ' ')}</span>
+                    <span>{relationLabel[relation.kind]}</span>
                     <div>
                       <strong>{other?.humanLabel ?? otherId}</strong>
                       <p>{relation.explanation}</p>
                     </div>
-                    <small>{relation.certainty}</small>
+                    <small>{certaintyLabel[relation.certainty]}</small>
                   </div>
                 );
               })
             ) : (
               <p className="text-sm text-muted-foreground">
-                No connected evidence was retained.
+                GlassWeb did not find a connected step here.
               </p>
             )}
           </div>
@@ -311,10 +333,10 @@ export function RedactionDialog({
 }) {
   return (
     <ModalShell
-      description="GlassWeb exports evidence metadata, never a hidden raw recording. Review the active policy before downloading."
+      description="GlassWeb downloads only the useful explanation data. Check what is left out before saving the result."
       eyebrow={
         <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
-          <ShieldCheck className="size-3" /> Safe export
+          <ShieldCheck className="size-3" /> Privacy check
         </div>
       }
       footer={
@@ -323,18 +345,18 @@ export function RedactionDialog({
             Cancel
           </Button>
           <Button onClick={onExport}>
-            <Download data-icon="inline-start" /> Export trace
+            <Download data-icon="inline-start" /> Download result
           </Button>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title="Review what leaves this browser"
+      title="Download a privacy-safe result"
     >
       <>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="mb-2 text-xs font-medium">Removed</p>
+            <p className="mb-2 text-xs font-medium">Left out</p>
             <ul className="space-y-1.5 text-xs text-muted-foreground">
               {trace.redaction.removed.map((item) => (
                 <li key={item}>— {item}</li>
@@ -342,7 +364,7 @@ export function RedactionDialog({
             </ul>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium">Retained</p>
+            <p className="mb-2 text-xs font-medium">Included</p>
             <ul className="space-y-1.5 text-xs text-muted-foreground">
               {trace.redaction.retained.map((item) => (
                 <li key={item}>+ {item}</li>

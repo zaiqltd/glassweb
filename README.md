@@ -4,7 +4,7 @@
 
 <h1 align="center">GlassWeb</h1>
 
-<p align="center"><strong>Click any interface. Unfold the browser-visible system that made it happen.</strong></p>
+<p align="center"><strong>Click anything on a website. GlassWeb explains what happened behind the screen - in plain English.</strong></p>
 
 <p align="center">
   <a href="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml"><img alt="Verify" src="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml/badge.svg" /></a>
@@ -13,13 +13,18 @@
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-63e7f4" />
 </p>
 
-GlassWeb is an evidence-native X-ray for websites. Pick a price, button, form, or visible outcome and the page separates into five aligned layers:
+GlassWeb watches one short browser session and turns it into a story a normal person can understand:
+
+> **Why am I seeing R1,499?**<br>
+> Orbit looked up the South African price and placed R1,499 in the Pro card after the page opened.
+
+The default view gives you one answer, four simple steps, and why the result matters. No DevTools vocabulary is required. When you want the technical proof, GlassWeb can unfold the same answer into five aligned layers:
 
 ```text
 Visible  →  Structure  →  Behaviour  →  Network  →  Service
 ```
 
-The result has the technical depth of DevTools, but it reads like a story. Human meaning comes first, raw identity stays one level below it, and every connection says how certain it really is.
+The complexity is still there. It is simply earned through disclosure: **Answer → What happened → Why you care → How do you know? → Full X-ray.**
 
 No city metaphor. No force-directed spaghetti. No AI filling gaps with fiction.
 
@@ -34,29 +39,30 @@ npm run demo
 
 Open [http://localhost:3000](http://localhost:3000), then:
 
-1. Click **Play tour** for the 30-second guided trace.
-2. Select the regional price or **Start Pro** inside the page.
-3. Move between **Trace**, **AI view**, and **Runtime**.
-4. Ask “Where does this price come from?” in the bottom bar.
-5. Inspect an entity to see the evidence and certainty behind it.
+1. Pick one normal-person question, such as **Why am I seeing R1,499?**
+2. Read the short answer and four-step story.
+3. Choose **Watch it happen** to replay the browser session.
+4. Choose **How do you know?** to inspect the proof.
+5. Open **Full X-ray** only when you want every technical detail.
 
 The bundled Orbit pricing session is deterministic and offline. It needs no account, API key, model provider, or captured browsing data.
 
 ## What is working today
 
-| Surface            | What it does                                                                  | Status                        |
-| ------------------ | ----------------------------------------------------------------------------- | ----------------------------- |
-| Exploded X-ray     | Keeps the real page visually anchored while technical layers unfold beside it | Working                       |
-| Evidence focus     | Dims unrelated objects and reveals one outcome-to-service path                | Working                       |
-| Runtime weave      | Replays clicks, mutations, requests, responses, and services on aligned lanes | Working                       |
-| AI visibility lens | Shows what disappears when content requires client JavaScript                 | Working in the canonical demo |
-| Ask bar            | Maps natural-language intents to entities already present in the trace        | Deterministic; no model calls |
-| Portable traces    | Validates, imports, replays, redacts, and exports `.glassweb.json` files      | Working                       |
-| Chrome recorder    | Captures one active page with minimal permissions and safe metadata defaults  | Alpha                         |
+| Surface              | What a normal person gets                                                     | Status                        |
+| -------------------- | ----------------------------------------------------------------------------- | ----------------------------- |
+| Simple answer        | One question, one clear answer, and why it matters                            | Default                       |
+| Four-step story      | Turns the hidden browser journey into ordinary actions                        | Working                       |
+| Replay               | Shows what happened in time without requiring log knowledge                   | Working                       |
+| What AI sees         | Shows information an AI tool may miss                                         | Working in the canonical demo |
+| How do you know?     | Explains what GlassWeb saw and where it is less certain                       | Working                       |
+| Full X-ray           | Preserves the complete five-layer technical inspection                        | Optional                      |
+| Portable recordings  | Opens, checks, replays, protects, and downloads `.glassweb.json` files         | Working                       |
+| Chrome recorder      | Watches one active page with minimal permissions and safe defaults            | Alpha                         |
 
 GlassWeb does not claim server-side causality it cannot see. In a normal capture, the recorder can prove that an interaction happened and that a request happened nearby. Without a reliable initiator stack, their edge is **correlated**, never silently promoted to **observed**.
 
-## Capture a real page
+## Check your own website
 
 Build the downloadable recorder:
 
@@ -70,15 +76,15 @@ Then:
 
 1. Open a normal HTTP or HTTPS page.
 2. Open GlassWeb Recorder and choose **Start capture**.
-3. Use the page normally. Click the outcome you want to understand.
-4. Open the recorder again and choose **Stop and export trace**.
-5. Drop the exported `.glassweb.json` file into the GlassWeb viewer with **Import**.
+3. Do the one thing you want explained.
+4. Stop and save the recording.
+5. Open that recording in GlassWeb to get the plain-English story.
 
 The extension asks for `activeTab`, `scripting`, `storage`, and `downloads` only. There is no `<all_urls>` access and no debugger permission.
 
 Screenshots are off by default because pixels can contain private information. If enabled, only the currently visible tab area is attached.
 
-## How to read GlassWeb
+## When you open Full X-ray
 
 ### The five layers
 

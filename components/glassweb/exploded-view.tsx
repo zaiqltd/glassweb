@@ -29,10 +29,18 @@ const certaintyMeta: Record<
   EvidenceCertainty,
   { label: string; icon: typeof CheckCircle2 }
 > = {
-  observed: { label: 'Observed', icon: CheckCircle2 },
-  correlated: { label: 'Correlated', icon: Radio },
-  inferred: { label: 'Inferred', icon: CircleDashed },
-  unknown: { label: 'Unknown', icon: HelpCircle },
+  observed: { label: 'We saw it', icon: CheckCircle2 },
+  correlated: { label: 'Best match', icon: Radio },
+  inferred: { label: 'Likely', icon: CircleDashed },
+  unknown: { label: "We can't tell", icon: HelpCircle },
+};
+
+const friendlyLayerNames: Record<TraceLayer, string> = {
+  visible: 'What you saw',
+  structure: 'The page part',
+  behaviour: 'What the page did',
+  network: 'What it sent',
+  service: 'Where it went',
 };
 
 const paths: Record<string, string> = {
@@ -136,7 +144,7 @@ function LayerPlane({
 
   return (
     <section
-      aria-label={`${layerMeta.label} layer`}
+      aria-label={friendlyLayerNames[layer]}
       className="trace-plane trace-plane-data"
       style={
         {
@@ -145,7 +153,7 @@ function LayerPlane({
       }
     >
       <div className="trace-plane-label justify-end gap-2">
-        <span>{layerMeta.label}</span>
+        <span>{friendlyLayerNames[layer]}</span>
         <span className="text-primary">{layerMeta.number}</span>
       </div>
       <div className="trace-node-list">
@@ -161,8 +169,7 @@ function LayerPlane({
         ))}
         {allEntities.length > entities.length ? (
           <p className="trace-node-overflow">
-            +{allEntities.length - entities.length} more captured{' '}
-            {layerMeta.label.toLowerCase()} entities
+            +{allEntities.length - entities.length} more things GlassWeb found
           </p>
         ) : null}
       </div>
@@ -202,11 +209,11 @@ export function ExplodedView({
 
         <div className="absolute left-6 top-5 z-30 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           <span>
-            {active ? 'Selected outcome' : 'Complete captured system'}
+            {active ? 'Answering' : 'Everything GlassWeb found'}
           </span>
           <span className="h-px w-10 bg-border" />
           <span className={active ? 'text-primary' : ''}>
-            {active ? focus.label : `${trace.entities.length} entities`}
+            {active ? focus.question : `${trace.entities.length} items`}
           </span>
         </div>
 
@@ -235,11 +242,11 @@ export function ExplodedView({
         </svg>
 
         <section
-          aria-label="Visible interface layer"
+          aria-label="What you saw"
           className="trace-plane trace-plane-screen"
         >
           <div className="trace-plane-label">
-            <span>Visible interface</span>
+            <span>What you saw</span>
             <span className="text-primary">00</span>
           </div>
           <PageSurface

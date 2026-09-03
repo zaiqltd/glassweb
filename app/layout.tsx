@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://glassweb.cae1.chatgpt.site';
-const title = 'GlassWeb — see the system behind the screen';
+const title = 'GlassWeb — understand any website without reading code';
 const description =
-  'Click anything on a website and unfold the browser-visible chain that made it appear or react.';
+  'Click anything on a website. GlassWeb explains what happened, where the data went, and what AI might miss — in plain English.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

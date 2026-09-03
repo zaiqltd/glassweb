@@ -46,13 +46,13 @@ const withEvidence = (trace: GlassWebTrace): GlassWebTrace => ({
 export const demoTrace: GlassWebTrace = withEvidence({
   schemaVersion: TRACE_SCHEMA_VERSION,
   id: 'demo-orbit-pricing',
-  title: 'Orbit pricing — instrumented demo',
+  title: 'Orbit pricing demo',
   createdAt: '2026-09-02T18:00:00.000Z',
   durationMs: 6200,
   page: {
     origin: 'https://orbit.systems',
     url: 'https://orbit.systems/pricing?region=••',
-    title: 'Orbit — Pricing',
+    title: 'Orbit pricing page',
     viewport: { width: 1440, height: 900, devicePixelRatio: 2 },
   },
   entities: [
@@ -565,12 +565,11 @@ export const demoTrace: GlassWebTrace = withEvidence({
   focuses: [
     {
       id: 'price',
-      label: 'Regional price',
-      question: 'Where does this price come from?',
-      summary:
-        'The visible price arrives from Orbit’s regional pricing service.',
+      label: 'This price',
+      question: 'Why am I seeing R1,499?',
+      summary: 'The R1,499 price came from Orbit’s pricing service.',
       detail:
-        'The browser requests South African pricing after hydration, formats the response, then updates the Pro plan price. The response-to-pixel step is correlated, not claimed as directly observed.',
+        'The page asked for the South African Pro price, received R1,499, and displayed it here. GlassWeb saw the events happen together but cannot see the private code joining the final two moments.',
       entityIds: [
         'visible-price',
         'structure-price',
@@ -591,10 +590,10 @@ export const demoTrace: GlassWebTrace = withEvidence({
     {
       id: 'checkout',
       label: 'Start Pro',
-      question: 'What happens when I click Start Pro?',
-      summary: 'The button creates a checkout session directly with Stripe.',
+      question: 'Where does Start Pro take my customer?',
+      summary: 'Start Pro creates a secure checkout with Stripe.',
       detail:
-        'A registered click listener creates one first-party checkout request. The returned session hands the visitor to Stripe; no unrelated service sits in the critical path.',
+        'The customer clicks Start Pro, Orbit starts one checkout, and Stripe returns the payment page. GlassWeb did not see any unexpected company in between.',
       entityIds: [
         'visible-cta',
         'structure-cta',
@@ -612,12 +611,11 @@ export const demoTrace: GlassWebTrace = withEvidence({
     },
     {
       id: 'analytics',
-      label: 'Plan analytics',
-      question: 'Which outside companies receive data?',
-      summary:
-        'Segment receives a plan-view event when the pricing card becomes visible.',
+      label: 'Who gets data',
+      question: 'Which outside company is contacted?',
+      summary: 'Segment receives a “Plan Viewed” message from this page.',
       detail:
-        'GlassWeb records the destination, timing, method and safe field names. It excludes the event body and any identity values from this portable trace.',
+        'The message is sent shortly after the Pro card appears. GlassWeb keeps the destination and timing, but it does not save the message body or anyone’s identity.',
       entityIds: [
         'visible-page',
         'structure-page',
@@ -635,12 +633,11 @@ export const demoTrace: GlassWebTrace = withEvidence({
     },
     {
       id: 'ai',
-      label: 'AI visibility',
-      question: 'What can an AI crawler actually see?',
-      summary:
-        'The plan names arrive in HTML, but regional prices require JavaScript.',
+      label: 'What AI sees',
+      question: 'Will AI tools see my prices?',
+      summary: 'AI can read the plan names, but some tools may miss the prices.',
       detail:
-        'The server document contains the plan structure. The price is requested and inserted only after client hydration, so a non-rendering crawler receives no amount.',
+        'The first version of the page contains the plan names. A real browser does extra work to add the prices later, so AI tools that leave early never receive the amount.',
       entityIds: [
         'visible-price',
         'structure-price',
@@ -656,16 +653,15 @@ export const demoTrace: GlassWebTrace = withEvidence({
       ],
       surfaceEntityId: 'visible-price',
       suggestedLens: 'ai',
-      finding:
-        'Render plan amounts in the initial HTML, then enhance them on the client.',
+      finding: 'Put the prices in the first version of the page so AI can see them.',
     },
     {
       id: 'newsletter',
-      label: 'Product updates',
+      label: 'Email signup',
       question: 'Where does this email address go?',
-      summary: 'The updates form sends a subscriber directly to Klaviyo.',
+      summary: 'The signup goes to Klaviyo. GlassWeb does not save the email.',
       detail:
-        'The portable trace proves the form, submit handler, request destination and provider. The email value itself was discarded before storage.',
+        'GlassWeb saw the signup leave the page and reach Klaviyo. It remembered the destination and discarded the actual email address before saving the recording.',
       entityIds: [
         'visible-newsletter',
         'structure-newsletter',

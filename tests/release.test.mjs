@@ -22,6 +22,30 @@ test('the canonical trace is internally consistent', () => {
   assert.ok(demoTrace.focuses.length >= 5);
 });
 
+test('the default experience explains one answer before showing the X-ray', async () => {
+  const app = await readFile(
+    resolve(root, 'components/glassweb/glassweb-app.tsx'),
+    'utf8',
+  );
+  const simple = await readFile(
+    resolve(root, 'components/glassweb/simple-story.tsx'),
+    'utf8',
+  );
+
+  assert.match(app, /useState<'simple' \| 'xray'>\([\s\S]*?'simple'/);
+  assert.match(app, /<SimpleStory/);
+  for (const promise of [
+    'The short answer',
+    'What happened',
+    'Why you care',
+    'How do you know?',
+    'Open full X-ray',
+  ]) {
+    assert.match(simple, new RegExp(promise.replace('?', '\\?')));
+  }
+  assert.doesNotMatch(simple, /technicalLabel/);
+});
+
 test('every demo entity and relation links to real evidence', () => {
   const evidenceIds = new Set(demoTrace.evidence.map((item) => item.id));
   for (const record of [...demoTrace.entities, ...demoTrace.relations]) {

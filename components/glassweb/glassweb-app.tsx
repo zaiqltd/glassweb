@@ -34,6 +34,7 @@ import {
   type ViewerLens,
 } from '@/components/glassweb/exploded-view';
 import { RuntimeWeave } from '@/components/glassweb/runtime-weave';
+import { SimpleStory } from '@/components/glassweb/simple-story';
 import {
   CaptureDialog,
   EvidenceDialog,
@@ -55,25 +56,17 @@ import {
 import type { GlassWebTrace } from '@/lib/glassweb/types';
 
 const lenses: Array<{ id: ViewerLens; label: string; icon: typeof Focus }> = [
-  { id: 'system', label: 'System', icon: Braces },
-  { id: 'trace', label: 'Trace', icon: Focus },
-  { id: 'ai', label: 'AI view', icon: Bot },
-  { id: 'runtime', label: 'Runtime', icon: Activity },
-];
-
-const demoTourSteps: Array<{ focusId: string; lens: ViewerLens }> = [
-  { focusId: 'price', lens: 'trace' },
-  { focusId: 'checkout', lens: 'trace' },
-  { focusId: 'analytics', lens: 'trace' },
-  { focusId: 'ai', lens: 'ai' },
-  { focusId: 'checkout', lens: 'runtime' },
+  { id: 'system', label: 'Everything', icon: Braces },
+  { id: 'trace', label: 'Answer path', icon: Focus },
+  { id: 'ai', label: 'What AI sees', icon: Bot },
+  { id: 'runtime', label: 'Replay', icon: Activity },
 ];
 
 const questionSuggestions = [
-  'Where does this price come from?',
-  'What happens when I click Start Pro?',
-  'Which outside companies receive data?',
-  'What can an AI crawler actually see?',
+  'Why am I seeing R1,499?',
+  'Where does Start Pro take my customer?',
+  'Which outside company is contacted?',
+  'Will AI tools see my prices?',
 ];
 
 function IconButton({
@@ -98,13 +91,14 @@ export function GlassWebApp() {
   const [trace, setTrace] = useState<GlassWebTrace>(demoTrace);
   const [focusId, setFocusId] = useState('price');
   const [selectedEntityId, setSelectedEntityId] = useState('visible-price');
+  const [experienceMode, setExperienceMode] = useState<'simple' | 'xray'>(
+    'simple',
+  );
   const [lens, setLens] = useState<ViewerLens>('trace');
   const [zoom, setZoom] = useState(100);
   const [question, setQuestion] = useState('');
   const [playhead, setPlayhead] = useState(0);
   const [runtimePlaying, setRuntimePlaying] = useState(false);
-  const [tourPlaying, setTourPlaying] = useState(false);
-  const [tourIndex, setTourIndex] = useState(0);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [redactionOpen, setRedactionOpen] = useState(false);
@@ -121,19 +115,6 @@ export function GlassWebApp() {
       trace.id === 'demo-orbit-pricing'
         ? questionSuggestions
         : trace.focuses.slice(0, 4).map((item) => item.question),
-    [trace],
-  );
-  const tourSteps = useMemo(
-    () =>
-      trace.id === 'demo-orbit-pricing'
-        ? demoTourSteps
-        : trace.focuses.slice(0, 5).map((item, index) => ({
-            focusId: item.id,
-            lens:
-              index === Math.min(4, trace.focuses.length - 1)
-                ? ('runtime' as const)
-                : (item.suggestedLens ?? ('trace' as const)),
-          })),
     [trace],
   );
 
@@ -157,9 +138,11 @@ export function GlassWebApp() {
       const parameters = new URLSearchParams(window.location.search);
       const requestedFocus = parameters.get('focus');
       const requestedLens = parameters.get('lens') as ViewerLens | null;
+      const requestedView = parameters.get('view');
       const validLens =
         requestedLens &&
         lenses.some((candidate) => candidate.id === requestedLens);
+      if (requestedView === 'xray' || validLens) setExperienceMode('xray');
       if (
         requestedFocus &&
         trace.focuses.some((candidate) => candidate.id === requestedFocus)
@@ -169,23 +152,6 @@ export function GlassWebApp() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [chooseFocus, trace.focuses]);
-
-  useEffect(() => {
-    if (!tourPlaying) return;
-    const timer = window.setTimeout(() => {
-      const nextIndex = tourIndex + 1;
-      if (nextIndex >= tourSteps.length) {
-        setTourPlaying(false);
-        setTourIndex(0);
-        return;
-      }
-      const step = tourSteps[nextIndex];
-      setTourIndex(nextIndex);
-      chooseFocus(step.focusId, step.lens);
-      setPlayhead(step.lens === 'runtime' ? 4200 : 0);
-    }, 3200);
-    return () => window.clearTimeout(timer);
-  }, [chooseFocus, tourIndex, tourPlaying, tourSteps]);
 
   useEffect(() => {
     if (!runtimePlaying) return;
@@ -223,7 +189,7 @@ export function GlassWebApp() {
     chooseFocus(match.id, match.suggestedLens ?? 'trace');
     setQuestion('');
     setQueryFocused(false);
-    announce(`Focused the evidence for “${match.label}”.`);
+    announce(`Showing the answer for “${match.question}”`);
   };
 
   const handleQuestionSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
@@ -256,6 +222,7 @@ export function GlassWebApp() {
       setFocusId(firstFocus.id);
       setSelectedEntityId(firstFocus.surfaceEntityId);
       setLens(firstFocus.suggestedLens ?? 'trace');
+      setExperienceMode('simple');
       setPlayhead(0);
       announce(`Opened “${imported.title}” offline.`);
     } catch {
@@ -286,6 +253,7 @@ export function GlassWebApp() {
     const url = new URL(window.location.href);
     url.searchParams.set('focus', focus.id);
     url.searchParams.set('lens', lens);
+    url.searchParams.set('view', 'xray');
     try {
       await navigator.clipboard.writeText(url.toString());
       announce('Replay link copied.');
@@ -294,23 +262,21 @@ export function GlassWebApp() {
     }
   };
 
-  const startTour = () => {
-    if (tourPlaying) {
-      setTourPlaying(false);
-      return;
-    }
-    setTourIndex(0);
-    setTourPlaying(true);
-    chooseFocus(tourSteps[0].focusId, tourSteps[0].lens);
-  };
-
   const toggleRuntime = () => {
     if (playhead >= trace.durationMs) setPlayhead(0);
     setRuntimePlaying((current) => !current);
   };
 
+  const openFullXray = (nextLens: ViewerLens = 'trace') => {
+    setLens(nextLens);
+    setExperienceMode('xray');
+    if (nextLens === 'runtime') setPlayhead(0);
+  };
+
   return (
-    <main className="glassweb-app flex min-h-screen flex-col bg-background text-foreground">
+    <main
+      className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'simple' ? 'is-simple' : ''}`}
+    >
       <input
         accept=".json,.glassweb,.glassweb.json,application/json"
         className="sr-only"
@@ -319,6 +285,47 @@ export function GlassWebApp() {
         type="file"
       />
 
+      {experienceMode === 'simple' ? (
+        <>
+          <header className="simple-header">
+            <div className="glassweb-brand">
+              <span className="glassweb-mark">
+                <ScanSearch className="size-4" />
+              </span>
+              <span className="simple-brand-copy">
+                <strong>GlassWeb</strong>
+                <small>Understand any website without reading code.</small>
+              </span>
+            </div>
+            <span className="simple-example-label">
+              Example: {trace.title}
+            </span>
+            <div className="simple-header-actions">
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                size="sm"
+                variant="ghost"
+              >
+                <Import data-icon="inline-start" /> Open a recording
+              </Button>
+              <Button onClick={() => setCaptureOpen(true)} size="sm">
+                <CircleDot data-icon="inline-start" /> Check my website
+              </Button>
+            </div>
+          </header>
+
+          <SimpleStory
+            focus={focus}
+            onChooseFocus={(nextFocusId) => chooseFocus(nextFocusId, 'trace')}
+            onOpenEvidence={() => setEvidenceOpen(true)}
+            onOpenProof={() => openFullXray('trace')}
+            onReplay={() => openFullXray('runtime')}
+            onSelectEntity={handleEntitySelect}
+            trace={trace}
+          />
+        </>
+      ) : (
+        <>
       <header className="glassweb-header">
         <div className="glassweb-brand">
           <span className="glassweb-mark">
@@ -337,20 +344,27 @@ export function GlassWebApp() {
         </div>
         <div className="glassweb-actions">
           <Button
+            onClick={() => setExperienceMode('simple')}
+            size="sm"
+            variant="ghost"
+          >
+            Back to simple view
+          </Button>
+          <Button
             onClick={() => setCaptureOpen(true)}
             size="sm"
             variant="outline"
           >
-            <CircleDot data-icon="inline-start" /> Capture
+            <CircleDot data-icon="inline-start" /> Check my website
           </Button>
           <IconButton
-            label="Import trace"
+            label="Open a recording"
             onClick={() => fileInputRef.current?.click()}
           >
             <Import />
           </IconButton>
           <IconButton
-            label="Export redacted trace"
+            label="Download result"
             onClick={() => setRedactionOpen(true)}
           >
             <Download />
@@ -371,10 +385,10 @@ export function GlassWebApp() {
       <section className="glassweb-toolbar">
         <div className="min-w-0">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            Selected explanation
+            What do you want to understand?
           </p>
           <label className="mt-1 flex min-w-0 items-center gap-2">
-            <span className="sr-only">Choose explanation</span>
+            <span className="sr-only">Choose a question</span>
             <select
               className="min-w-0 max-w-[360px] cursor-pointer appearance-none bg-transparent pr-5 text-sm font-medium outline-none"
               onChange={(event) => chooseFocus(event.target.value)}
@@ -382,15 +396,15 @@ export function GlassWebApp() {
             >
               {trace.focuses.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
-                  {candidate.label}
+                  {candidate.question}
                 </option>
               ))}
             </select>
             <ChevronDown className="pointer-events-none -ml-6 size-3 text-muted-foreground" />
             <span className="hidden font-mono text-[10px] text-primary md:inline">
-              {counts.observed} observed
+              {counts.observed} seen
               {counts.correlated > 0
-                ? ` · ${counts.correlated} correlated`
+                ? ` · ${counts.correlated} likely`
                 : ''}
             </span>
           </label>
@@ -460,18 +474,6 @@ export function GlassWebApp() {
               </IconButton>
             </>
           )}
-          <Button
-            onClick={startTour}
-            size="sm"
-            variant={tourPlaying ? 'default' : 'outline'}
-          >
-            {tourPlaying ? (
-              <Pause data-icon="inline-start" />
-            ) : (
-              <Play data-icon="inline-start" />
-            )}
-            {tourPlaying ? 'Stop tour' : 'Play tour'}
-          </Button>
         </div>
       </section>
 
@@ -513,7 +515,7 @@ export function GlassWebApp() {
             size="xs"
             variant="ghost"
           >
-            Inspect evidence
+            How do you know?
           </Button>
         </div>
 
@@ -540,7 +542,7 @@ export function GlassWebApp() {
             onBlur={() => window.setTimeout(() => setQueryFocused(false), 120)}
             onChange={(event) => setQuestion(event.target.value)}
             onFocus={() => setQueryFocused(true)}
-            placeholder="Ask the system how this page works…"
+            placeholder="Ask about this page…"
             value={question}
           />
           <Button aria-label="Focus answer" size="icon-sm" type="submit">
@@ -548,6 +550,8 @@ export function GlassWebApp() {
           </Button>
         </form>
       </footer>
+        </>
+      )}
 
       {toast ? (
         <div aria-live="polite" className="glassweb-toast">

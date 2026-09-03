@@ -25,32 +25,32 @@ const lanes: Array<{
 }> = [
   {
     layer: 'visible',
-    label: 'Visitor',
-    subtitle: 'Clicks and visible change',
+    label: 'What you did',
+    subtitle: 'Clicks and things you could see',
     icon: MousePointer2,
   },
   {
     layer: 'structure',
-    label: 'Interface',
-    subtitle: 'Document structure',
+    label: 'What appeared',
+    subtitle: 'Parts of the page',
     icon: Route,
   },
   {
     layer: 'behaviour',
-    label: 'Behaviour',
-    subtitle: 'Handlers and mutations',
+    label: 'What the page did',
+    subtitle: 'Reactions and changes',
     icon: Radio,
   },
   {
     layer: 'network',
-    label: 'Network',
-    subtitle: 'Requests and responses',
+    label: 'What it sent',
+    subtitle: 'Messages leaving the page',
     icon: Network,
   },
   {
     layer: 'service',
-    label: 'Services',
-    subtitle: 'First and third parties',
+    label: 'Where it went',
+    subtitle: 'Your site and outside companies',
     icon: Server,
   },
 ];
@@ -76,13 +76,12 @@ export function RuntimeWeave({
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              Runtime weave
+              Replay what happened
             </p>
             <h2 className="mt-1 text-base font-medium">{trace.title}</h2>
           </div>
           <p className="max-w-md text-right text-xs text-muted-foreground">
-            Time moves left to right. Bright events belong to the selected
-            explanation.
+            Read left to right. Bright moments are part of this answer.
           </p>
         </div>
 
@@ -142,7 +141,7 @@ export function RuntimeWeave({
 
         <div className="mt-4 grid grid-cols-[180px_1fr] items-center">
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Session time
+            Move through the recording
           </span>
           <input
             aria-label="Session time"
