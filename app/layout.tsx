@@ -12,7 +12,8 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://glassweb.cae1.chatgpt.site';
 const title = 'GlassWeb — see the system behind the screen';
 const description =
   'Click anything on a website and unfold the browser-visible chain that made it appear or react.';
