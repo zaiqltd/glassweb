@@ -45,7 +45,9 @@ import { Input } from '@/components/ui/input';
 import { demoTrace } from '@/lib/glassweb/demo-trace';
 import {
   certaintyCounts,
+  createAgentBrief,
   findFocusFromQuestion,
+  getBestStartingFocus,
   getEntityMap,
   getFocus,
   getFocusForEntity,
@@ -63,10 +65,10 @@ const lenses: Array<{ id: ViewerLens; label: string; icon: typeof Focus }> = [
 ];
 
 const questionSuggestions = [
+  'What happens after someone clicks Start Pro?',
   'Why am I seeing R1,499?',
-  'Where does Start Pro take my customer?',
+  'What changes when I choose Annual?',
   'Which outside company is contacted?',
-  'Will AI tools see my prices?',
 ];
 
 function IconButton({
@@ -89,8 +91,8 @@ function IconButton({
 
 export function GlassWebApp() {
   const [trace, setTrace] = useState<GlassWebTrace>(demoTrace);
-  const [focusId, setFocusId] = useState('price');
-  const [selectedEntityId, setSelectedEntityId] = useState('visible-price');
+  const [focusId, setFocusId] = useState('checkout');
+  const [selectedEntityId, setSelectedEntityId] = useState('visible-cta');
   const [experienceMode, setExperienceMode] = useState<'simple' | 'xray'>(
     'simple',
   );
@@ -110,6 +112,17 @@ export function GlassWebApp() {
   const entityMap = useMemo(() => getEntityMap(trace), [trace]);
   const selectedEntity = entityMap.get(selectedEntityId);
   const counts = useMemo(() => certaintyCounts(trace, focus), [trace, focus]);
+  const supportsAiLens = useMemo(
+    () =>
+      trace.focuses.some(
+        (candidate) => candidate.suggestedLens === 'ai' && candidate.finding,
+      ),
+    [trace],
+  );
+  const availableLenses = useMemo(
+    () => lenses.filter((item) => item.id !== 'ai' || supportsAiLens),
+    [supportsAiLens],
+  );
   const activeQuestionSuggestions = useMemo(
     () =>
       trace.id === 'demo-orbit-pricing'
@@ -141,7 +154,7 @@ export function GlassWebApp() {
       const requestedView = parameters.get('view');
       const validLens =
         requestedLens &&
-        lenses.some((candidate) => candidate.id === requestedLens);
+        availableLenses.some((candidate) => candidate.id === requestedLens);
       if (requestedView === 'xray' || validLens) setExperienceMode('xray');
       if (
         requestedFocus &&
@@ -151,7 +164,7 @@ export function GlassWebApp() {
       }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [chooseFocus, trace.focuses]);
+  }, [availableLenses, chooseFocus, trace.focuses]);
 
   useEffect(() => {
     if (!runtimePlaying) return;
@@ -186,6 +199,10 @@ export function GlassWebApp() {
   const runQuestion = (value = question) => {
     if (!value.trim()) return;
     const match = findFocusFromQuestion(trace, value);
+    if (!match) {
+      announce('This recording doesn’t contain an answer to that yet.');
+      return;
+    }
     chooseFocus(match.id, match.suggestedLens ?? 'trace');
     setQuestion('');
     setQueryFocused(false);
@@ -217,13 +234,14 @@ export function GlassWebApp() {
         return;
       }
       const imported = validation.trace;
-      const firstFocus = imported.focuses[0];
+      const firstFocus = getBestStartingFocus(imported);
       setTrace(imported);
       setFocusId(firstFocus.id);
       setSelectedEntityId(firstFocus.surfaceEntityId);
       setLens(firstFocus.suggestedLens ?? 'trace');
       setExperienceMode('simple');
       setPlayhead(0);
+      window.history.replaceState({}, '', window.location.pathname);
       announce(`Opened “${imported.title}” offline.`);
     } catch {
       announce('GlassWeb could not read that JSON file.');
@@ -241,13 +259,13 @@ export function GlassWebApp() {
     anchor.click();
     URL.revokeObjectURL(href);
     setRedactionOpen(false);
-    announce('Redacted trace exported.');
+    announce('Recording saved. Review it before sharing.');
   };
 
   const shareView = async () => {
     if (trace.id !== 'demo-orbit-pricing') {
       setRedactionOpen(true);
-      announce('Live captures are shared as explicit, redacted trace files.');
+      announce('Save this recording first, then share the reviewed file.');
       return;
     }
     const url = new URL(window.location.href);
@@ -256,7 +274,7 @@ export function GlassWebApp() {
     url.searchParams.set('view', 'xray');
     try {
       await navigator.clipboard.writeText(url.toString());
-      announce('Replay link copied.');
+      announce('This view was copied.');
     } catch {
       announce('Copy was blocked by this browser.');
     }
@@ -273,15 +291,46 @@ export function GlassWebApp() {
     if (nextLens === 'runtime') setPlayhead(0);
   };
 
+  const startReplay = () => {
+    setLens('runtime');
+    setExperienceMode('xray');
+    setPlayhead(0);
+    setRuntimePlaying(true);
+  };
+
+  const returnToSimple = () => {
+    setRuntimePlaying(false);
+    setExperienceMode('simple');
+    setLens(focus.suggestedLens === 'ai' ? 'ai' : 'trace');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('view');
+    url.searchParams.delete('lens');
+    window.history.replaceState(
+      {},
+      '',
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  };
+
+  const copyAgentBrief = async () => {
+    try {
+      await navigator.clipboard.writeText(createAgentBrief(trace, focus));
+      announce('Proof copied. Paste it into your coding agent.');
+    } catch {
+      announce('Copy was blocked by this browser.');
+    }
+  };
+
   return (
     <main
       className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'simple' ? 'is-simple' : ''}`}
     >
       <input
         accept=".json,.glassweb,.glassweb.json,application/json"
-        className="sr-only"
+        hidden
         onChange={handleImport}
         ref={fileInputRef}
+        tabIndex={-1}
         type="file"
       />
 
@@ -294,262 +343,282 @@ export function GlassWebApp() {
               </span>
               <span className="simple-brand-copy">
                 <strong>GlassWeb</strong>
-                <small>Understand any website without reading code.</small>
+                <small>One click. One answer. Real proof.</small>
               </span>
             </div>
             <span className="simple-example-label">
-              Example: {trace.title}
+              {trace.id === 'demo-orbit-pricing'
+                ? 'Live example'
+                : 'Your recording'}
+              : {trace.title}
             </span>
             <div className="simple-header-actions">
               <Button
+                className="simple-open-action"
                 onClick={() => fileInputRef.current?.click()}
                 size="sm"
                 variant="ghost"
               >
                 <Import data-icon="inline-start" /> Open a recording
               </Button>
-              <Button onClick={() => setCaptureOpen(true)} size="sm">
-                <CircleDot data-icon="inline-start" /> Check my website
+              <Button
+                className="simple-capture-action"
+                onClick={() => setCaptureOpen(true)}
+                size="sm"
+              >
+                <CircleDot data-icon="inline-start" /> Record my website
               </Button>
             </div>
           </header>
 
           <SimpleStory
             focus={focus}
+            onCopyBrief={copyAgentBrief}
             onChooseFocus={(nextFocusId) => chooseFocus(nextFocusId, 'trace')}
             onOpenEvidence={() => setEvidenceOpen(true)}
             onOpenProof={() => openFullXray('trace')}
-            onReplay={() => openFullXray('runtime')}
+            onReplay={startReplay}
             onSelectEntity={handleEntitySelect}
             trace={trace}
           />
         </>
       ) : (
         <>
-      <header className="glassweb-header">
-        <div className="glassweb-brand">
-          <span className="glassweb-mark">
-            <ScanSearch className="size-4" />
-          </span>
-          <span className="font-mono text-sm font-medium tracking-[0.22em]">
-            GLASSWEB
-          </span>
-          <span className="hidden font-mono text-[9px] tracking-[0.12em] text-muted-foreground xl:inline">
-            ALPHA 001
-          </span>
-        </div>
-        <div className="glassweb-location" title={trace.page.url}>
-          <span className="size-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
-          <code>{trace.page.url}</code>
-        </div>
-        <div className="glassweb-actions">
-          <Button
-            onClick={() => setExperienceMode('simple')}
-            size="sm"
-            variant="ghost"
-          >
-            Back to simple view
-          </Button>
-          <Button
-            onClick={() => setCaptureOpen(true)}
-            size="sm"
-            variant="outline"
-          >
-            <CircleDot data-icon="inline-start" /> Check my website
-          </Button>
-          <IconButton
-            label="Open a recording"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Import />
-          </IconButton>
-          <IconButton
-            label="Download result"
-            onClick={() => setRedactionOpen(true)}
-          >
-            <Download />
-          </IconButton>
-          <IconButton
-            label={
-              trace.id === 'demo-orbit-pricing'
-                ? 'Copy demo replay link'
-                : 'Export trace to share'
-            }
-            onClick={shareView}
-          >
-            <Share2 />
-          </IconButton>
-        </div>
-      </header>
-
-      <section className="glassweb-toolbar">
-        <div className="min-w-0">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            What do you want to understand?
-          </p>
-          <label className="mt-1 flex min-w-0 items-center gap-2">
-            <span className="sr-only">Choose a question</span>
-            <select
-              className="min-w-0 max-w-[360px] cursor-pointer appearance-none bg-transparent pr-5 text-sm font-medium outline-none"
-              onChange={(event) => chooseFocus(event.target.value)}
-              value={focus.id}
-            >
-              {trace.focuses.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.question}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none -ml-6 size-3 text-muted-foreground" />
-            <span className="hidden font-mono text-[10px] text-primary md:inline">
-              {counts.observed} seen
-              {counts.correlated > 0
-                ? ` · ${counts.correlated} likely`
-                : ''}
-            </span>
-          </label>
-        </div>
-
-        <div aria-label="Viewer lens" className="lens-switcher">
-          {lenses.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                aria-pressed={lens === item.id}
-                className="lens-button"
-                key={item.id}
-                onClick={() => {
-                  setLens(item.id);
-                  if (
-                    item.id === 'ai' &&
-                    trace.focuses.some((candidate) => candidate.id === 'ai')
-                  ) {
-                    chooseFocus('ai', 'ai');
-                  }
-                }}
-                type="button"
-              >
-                <Icon className="size-3.5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center gap-1">
-          {lens === 'runtime' ? (
-            <Button
-              onClick={toggleRuntime}
-              size="sm"
-              variant={runtimePlaying ? 'default' : 'outline'}
-            >
-              {runtimePlaying ? (
-                <Pause data-icon="inline-start" />
-              ) : (
-                <Play data-icon="inline-start" />
-              )}
-              {runtimePlaying ? 'Pause' : 'Replay'}
-            </Button>
-          ) : (
-            <>
-              <IconButton
-                label="Zoom out"
-                disabled={zoom <= 80}
-                onClick={() => setZoom((value) => Math.max(80, value - 10))}
-              >
-                <ZoomOut />
-              </IconButton>
-              <span className="w-9 text-center font-mono text-[9px] text-muted-foreground">
-                {zoom}%
+          <header className="glassweb-header">
+            <div className="glassweb-brand">
+              <span className="glassweb-mark">
+                <ScanSearch className="size-4" />
               </span>
-              <IconButton
-                label="Zoom in"
-                disabled={zoom >= 120}
-                onClick={() => setZoom((value) => Math.min(120, value + 10))}
+              <span className="font-mono text-sm font-medium tracking-[0.22em]">
+                GLASSWEB
+              </span>
+              <span className="hidden font-mono text-[9px] tracking-[0.12em] text-muted-foreground xl:inline">
+                ALPHA 001
+              </span>
+            </div>
+            <div className="glassweb-location" title={trace.page.url}>
+              <span className="size-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
+              <code>{trace.page.url}</code>
+            </div>
+            <div className="glassweb-actions">
+              <Button
+                className="back-simple-action"
+                onClick={returnToSimple}
+                size="sm"
+                variant="ghost"
               >
-                <ZoomIn />
+                Back to simple view
+              </Button>
+              <Button
+                className="xray-secondary"
+                onClick={() => setCaptureOpen(true)}
+                size="sm"
+                variant="outline"
+              >
+                <CircleDot data-icon="inline-start" /> Record my website
+              </Button>
+              <IconButton
+                className="xray-open-action"
+                label="Open a recording"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Import />
               </IconButton>
-              <IconButton label="Reset view" onClick={() => setZoom(100)}>
-                <Maximize2 />
+              <IconButton
+                className="xray-secondary"
+                label="Save recording"
+                onClick={() => setRedactionOpen(true)}
+              >
+                <Download />
               </IconButton>
-            </>
-          )}
-        </div>
-      </section>
+              <IconButton
+                label={
+                  trace.id === 'demo-orbit-pricing'
+                    ? 'Copy this view'
+                    : 'Save recording to share'
+                }
+                className="xray-secondary"
+                onClick={shareView}
+              >
+                <Share2 />
+              </IconButton>
+            </div>
+          </header>
 
-      <section className="relative min-h-[560px] flex-1 overflow-hidden">
-        {lens === 'runtime' ? (
-          <RuntimeWeave
-            focus={focus}
-            onSeek={setPlayhead}
-            playhead={playhead}
-            trace={trace}
-          />
-        ) : (
-          <ExplodedView
-            focus={focus}
-            lens={lens}
-            onSelectEntity={handleEntitySelect}
-            selectedEntityId={selectedEntityId}
-            trace={trace}
-            zoom={zoom}
-          />
-        )}
-      </section>
-
-      <footer className="glassweb-footer">
-        <div className="finding-summary">
-          <div className="flex min-w-0 items-start gap-2.5">
-            <ScanLine className="mt-0.5 size-4 shrink-0 text-primary" />
+          <section className="glassweb-toolbar">
             <div className="min-w-0">
-              <p className="text-sm font-medium">
-                {lens === 'ai' && focus.finding ? focus.finding : focus.summary}
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+                What do you want to understand?
               </p>
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                {focus.detail}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() => setEvidenceOpen(true)}
-            size="xs"
-            variant="ghost"
-          >
-            How do you know?
-          </Button>
-        </div>
-
-        <form className="ask-system" onSubmit={handleQuestionSubmit}>
-          {queryFocused ? (
-            <div className="question-suggestions">
-              {activeQuestionSuggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => runQuestion(suggestion)}
-                  onMouseDown={(event) => event.preventDefault()}
-                  type="button"
+              <label className="mt-1 flex min-w-0 items-center gap-2">
+                <span className="sr-only">Choose a question</span>
+                <select
+                  className="min-w-0 max-w-[360px] cursor-pointer appearance-none bg-transparent pr-5 text-sm font-medium outline-none"
+                  onChange={(event) => chooseFocus(event.target.value)}
+                  value={focus.id}
                 >
-                  {suggestion}
-                </button>
-              ))}
+                  {trace.focuses.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.question}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none -ml-6 size-3 text-muted-foreground" />
+                <span className="hidden font-mono text-[10px] text-primary md:inline">
+                  {counts.observed} seen
+                  {counts.correlated > 0
+                    ? ` · ${counts.correlated} likely`
+                    : ''}
+                </span>
+              </label>
             </div>
-          ) : null}
-          <Sparkles className="size-4 shrink-0 text-primary" />
-          <Input
-            aria-label="Ask GlassWeb"
-            autoComplete="off"
-            className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-            onBlur={() => window.setTimeout(() => setQueryFocused(false), 120)}
-            onChange={(event) => setQuestion(event.target.value)}
-            onFocus={() => setQueryFocused(true)}
-            placeholder="Ask about this page…"
-            value={question}
-          />
-          <Button aria-label="Focus answer" size="icon-sm" type="submit">
-            <Play className="size-3.5" />
-          </Button>
-        </form>
-      </footer>
+
+            <div aria-label="Viewer lens" className="lens-switcher">
+              {availableLenses.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    aria-pressed={lens === item.id}
+                    className="lens-button"
+                    key={item.id}
+                    onClick={() => {
+                      setLens(item.id);
+                      if (
+                        item.id === 'ai' &&
+                        trace.focuses.some((candidate) => candidate.id === 'ai')
+                      ) {
+                        chooseFocus('ai', 'ai');
+                      }
+                    }}
+                    type="button"
+                  >
+                    <Icon className="size-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-1">
+              {lens === 'runtime' ? (
+                <Button
+                  onClick={toggleRuntime}
+                  size="sm"
+                  variant={runtimePlaying ? 'default' : 'outline'}
+                >
+                  {runtimePlaying ? (
+                    <Pause data-icon="inline-start" />
+                  ) : (
+                    <Play data-icon="inline-start" />
+                  )}
+                  {runtimePlaying ? 'Pause' : 'Replay'}
+                </Button>
+              ) : (
+                <>
+                  <IconButton
+                    label="Zoom out"
+                    disabled={zoom <= 80}
+                    onClick={() => setZoom((value) => Math.max(80, value - 10))}
+                  >
+                    <ZoomOut />
+                  </IconButton>
+                  <span className="w-9 text-center font-mono text-[9px] text-muted-foreground">
+                    {zoom}%
+                  </span>
+                  <IconButton
+                    label="Zoom in"
+                    disabled={zoom >= 120}
+                    onClick={() =>
+                      setZoom((value) => Math.min(120, value + 10))
+                    }
+                  >
+                    <ZoomIn />
+                  </IconButton>
+                  <IconButton label="Reset view" onClick={() => setZoom(100)}>
+                    <Maximize2 />
+                  </IconButton>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="relative min-h-[560px] flex-1 overflow-hidden">
+            {lens === 'runtime' ? (
+              <RuntimeWeave
+                focus={focus}
+                onSeek={setPlayhead}
+                playhead={playhead}
+                trace={trace}
+              />
+            ) : (
+              <ExplodedView
+                focus={focus}
+                lens={lens}
+                onSelectEntity={handleEntitySelect}
+                selectedEntityId={selectedEntityId}
+                trace={trace}
+                zoom={zoom}
+              />
+            )}
+          </section>
+
+          <footer className="glassweb-footer">
+            <div className="finding-summary">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <ScanLine className="mt-0.5 size-4 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {lens === 'ai' && focus.finding
+                      ? focus.finding
+                      : focus.summary}
+                  </p>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                    {focus.detail}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setEvidenceOpen(true)}
+                size="xs"
+                variant="ghost"
+              >
+                How do you know?
+              </Button>
+            </div>
+
+            <form className="ask-system" onSubmit={handleQuestionSubmit}>
+              {queryFocused ? (
+                <div className="question-suggestions">
+                  {activeQuestionSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => runQuestion(suggestion)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      type="button"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <Sparkles className="size-4 shrink-0 text-primary" />
+              <Input
+                aria-label="Ask GlassWeb"
+                autoComplete="off"
+                className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                onBlur={() =>
+                  window.setTimeout(() => setQueryFocused(false), 120)
+                }
+                onChange={(event) => setQuestion(event.target.value)}
+                onFocus={() => setQueryFocused(true)}
+                placeholder="Ask about this page…"
+                value={question}
+              />
+              <Button aria-label="Focus answer" size="icon-sm" type="submit">
+                <Play className="size-3.5" />
+              </Button>
+            </form>
+          </footer>
         </>
       )}
 
@@ -569,6 +638,7 @@ export function GlassWebApp() {
       />
       <EvidenceDialog
         entity={selectedEntity}
+        focus={focus}
         onOpenChange={setEvidenceOpen}
         open={evidenceOpen}
         trace={trace}

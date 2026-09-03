@@ -663,6 +663,7 @@
     document.addEventListener('change', handleInteraction, true);
     document.addEventListener('submit', handleInteraction, true);
     window.addEventListener('message', handlePageMessage);
+    window.addEventListener('pagehide', handlePageExit, { once: true });
     mutationObserver = new MutationObserver(handleMutations);
     mutationObserver.observe(document.documentElement, {
       childList: true,
@@ -697,11 +698,11 @@
         label: safeText(seed.label, 72),
         question: safeText(seed.question, 130),
         summary: hasNetwork
-          ? 'GlassWeb observed the interaction and a nearby request. Their connection is marked correlated, not proven.'
-          : 'GlassWeb observed this element and interaction. No request could be reliably connected to it.',
+          ? 'A browser request happened shortly after this action. GlassWeb treats the timing as a clue, not proof.'
+          : 'GlassWeb recorded this action, but no outgoing request could be matched to it.',
         detail: hasNetwork
-          ? 'Open the evidence panel to distinguish directly observed endpoints from timing-based links.'
-          : 'The browser exposed the visible and document layers; deeper application behaviour remains unknown.',
+          ? 'The destination and request are directly recorded. The link back to the click is based on timing unless deeper browser evidence is available.'
+          : 'This recording shows what happened on the page. It does not claim a hidden connection that the browser did not expose.',
         entityIds,
         relationIds,
         surfaceEntityId: seed.surfaceEntityId,
@@ -719,6 +720,7 @@
     document.removeEventListener('change', handleInteraction, true);
     document.removeEventListener('submit', handleInteraction, true);
     window.removeEventListener('message', handlePageMessage);
+    window.removeEventListener('pagehide', handlePageExit);
     mutationObserver?.disconnect();
     performanceObserver?.disconnect();
     mutationObserver = null;
@@ -740,7 +742,7 @@
       return null;
     }
     const finished = state;
-    const durationMs = now();
+    const durationMs = Math.max(1, now());
     const trace = {
       schemaVersion: 1,
       id: `trace-${crypto.randomUUID()}`,
@@ -778,6 +780,23 @@
     };
     state = null;
     return trace;
+  }
+
+  function handlePageExit() {
+    if (!state) return;
+    const sessionId = state.sessionId;
+    try {
+      const trace = stop(true);
+      if (trace) {
+        void chrome.runtime.sendMessage({
+          type: 'GLASSWEB_PARTIAL',
+          sessionId,
+          trace,
+        });
+      }
+    } catch {
+      // The background also preserves an interrupted status if teardown wins the race.
+    }
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

@@ -4,7 +4,7 @@
 
 <h1 align="center">GlassWeb</h1>
 
-<p align="center"><strong>Click anything on a website. GlassWeb explains what happened behind the screen - in plain English.</strong></p>
+<p align="center"><strong>Record one action. Get a plain-English answer and proof your coding agent can use.</strong></p>
 
 <p align="center">
   <a href="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml"><img alt="Verify" src="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml/badge.svg" /></a>
@@ -13,12 +13,12 @@
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-63e7f4" />
 </p>
 
-GlassWeb watches one short browser session and turns it into a story a normal person can understand:
+GlassWeb watches one short browser action and turns it into a story a normal person can understand:
 
 > **Why am I seeing R1,499?**<br>
 > Orbit looked up the South African price and placed R1,499 in the Pro card after the page opened.
 
-The default view gives you one answer, four simple steps, and why the result matters. No DevTools vocabulary is required. When you want the technical proof, GlassWeb can unfold the same answer into five aligned layers:
+The default view gives you one answer, four simple steps, and why the result matters. No DevTools vocabulary is required. You can copy a bounded evidence packet into Cursor, Claude, Codex, or another coding agent. When you want the technical proof, GlassWeb unfolds the same answer into five aligned layers:
 
 ```text
 Visible  →  Structure  →  Behaviour  →  Network  →  Service
@@ -49,20 +49,21 @@ The bundled Orbit pricing session is deterministic and offline. It needs no acco
 
 ## What is working today
 
-| Surface              | What a normal person gets                                                     | Status                        |
-| -------------------- | ----------------------------------------------------------------------------- | ----------------------------- |
-| Simple answer        | One question, one clear answer, and why it matters                            | Default                       |
-| Four-step story      | Turns the hidden browser journey into ordinary actions                        | Working                       |
-| Replay               | Shows what happened in time without requiring log knowledge                   | Working                       |
-| What AI sees         | Shows information an AI tool may miss                                         | Working in the canonical demo |
-| How do you know?     | Explains what GlassWeb saw and where it is less certain                       | Working                       |
-| Full X-ray           | Preserves the complete five-layer technical inspection                        | Optional                      |
-| Portable recordings  | Opens, checks, replays, protects, and downloads `.glassweb.json` files         | Working                       |
-| Chrome recorder      | Watches one active page with minimal permissions and safe defaults            | Alpha                         |
+| Surface              | What a normal person gets                                               | Status                        |
+| -------------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| Simple answer        | One question, one clear answer, and why it matters                      | Default                       |
+| Four-step story      | Turns the hidden browser journey into ordinary actions                  | Working                       |
+| Coding-agent handoff | Copies the finding, path, and certainty without inventing missing links | Working                       |
+| Replay               | Shows what happened in time without requiring log knowledge             | Working                       |
+| What AI sees         | Shows information an AI tool may miss                                   | Working in the canonical demo |
+| How do you know?     | Explains what GlassWeb saw and where it is less certain                 | Working                       |
+| Full X-ray           | Preserves the complete five-layer technical inspection                  | Optional                      |
+| Portable recordings  | Opens, checks, replays, protects, and downloads `.glassweb.json` files  | Working                       |
+| Chrome recorder      | Watches one active page with minimal permissions and safe defaults      | Alpha                         |
 
 GlassWeb does not claim server-side causality it cannot see. In a normal capture, the recorder can prove that an interaction happened and that a request happened nearby. Without a reliable initiator stack, their edge is **correlated**, never silently promoted to **observed**.
 
-## Check your own website
+## Record your own website
 
 Build the downloadable recorder:
 
@@ -75,7 +76,7 @@ For local development, open `chrome://extensions`, enable **Developer mode**, ch
 Then:
 
 1. Open a normal HTTP or HTTPS page.
-2. Open GlassWeb Recorder and choose **Start capture**.
+2. Open GlassWeb Recorder and choose **Start watching**.
 3. Do the one thing you want explained.
 4. Stop and save the recording.
 5. Open that recording in GlassWeb to get the plain-English story.
@@ -154,7 +155,7 @@ docs/TRACE-FORMAT.md         GlassWeb trace v1 reference
 
 ## Honest limitations
 
-- Capture currently covers one page until navigation; a navigation ends the active session.
+- Capture currently covers one page. If navigation occurs, GlassWeb preserves a recoverable partial recording and says exactly what happened.
 - `fetch`, XHR, resource timing, clicks, submits, changes, and DOM mutations are covered. WebSocket, EventSource, service-worker, and CDP initiators are not yet captured.
 - Cross-origin iframes and closed shadow roots remain opaque.
 - A hostile page can interfere with MAIN-world instrumentation. GlassWeb traces are explanation artifacts, not forensic security logs.

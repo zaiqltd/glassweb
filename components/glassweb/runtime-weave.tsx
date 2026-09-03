@@ -72,7 +72,7 @@ export function RuntimeWeave({
         className="instrument-grid pointer-events-none absolute inset-0"
         aria-hidden="true"
       />
-      <div className="relative mx-auto min-w-[800px] max-w-[1400px]">
+      <div className="runtime-shell relative mx-auto max-w-[1400px]">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -81,7 +81,7 @@ export function RuntimeWeave({
             <h2 className="mt-1 text-base font-medium">{trace.title}</h2>
           </div>
           <p className="max-w-md text-right text-xs text-muted-foreground">
-            Read left to right. Bright moments are part of this answer.
+            Bright moments belong to this answer. Replay, or choose any moment.
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export function RuntimeWeave({
           })}
         </div>
 
-        <div className="mt-4 grid grid-cols-[180px_1fr] items-center">
+        <div className="runtime-scrubber mt-4 grid grid-cols-[180px_1fr] items-center">
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Move through the recording
           </span>

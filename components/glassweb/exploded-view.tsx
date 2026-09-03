@@ -48,6 +48,8 @@ const paths: Record<string, string> = {
     'M315 300 C390 300 405 223 475 223 S700 225 778 225 S990 223 1068 223 S1255 236 1350 236',
   checkout:
     'M330 423 C402 423 410 289 482 289 S700 294 785 294 S993 291 1070 291 S1265 301 1350 301',
+  billing:
+    'M330 191 C402 191 410 355 482 355 S700 365 785 365 S993 225 1070 225 S1265 236 1350 236',
   analytics:
     'M252 168 C390 168 412 157 482 157 S694 432 782 432 S990 386 1070 386 S1260 382 1350 382',
   ai: 'M315 300 C390 300 405 223 475 223 S700 159 778 159 S990 223 1068 223 S1255 236 1350 236',
@@ -89,6 +91,7 @@ function LayerNode({
         selected && 'trace-node-selected',
         systemMode && 'trace-node-system',
       )}
+      data-certainty={entity.certainty}
       onClick={onSelect}
       type="button"
     >
@@ -208,9 +211,7 @@ export function ExplodedView({
         <div className="instrument-grid absolute inset-0" aria-hidden="true" />
 
         <div className="absolute left-6 top-5 z-30 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-          <span>
-            {active ? 'Answering' : 'Everything GlassWeb found'}
-          </span>
+          <span>{active ? 'Answering' : 'Everything GlassWeb found'}</span>
           <span className="h-px w-10 bg-border" />
           <span className={active ? 'text-primary' : ''}>
             {active ? focus.question : `${trace.entities.length} items`}

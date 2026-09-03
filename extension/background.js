@@ -203,21 +203,31 @@ function downloadName(trace) {
 async function stopCapture(includeScreenshot) {
   const tab = await getActiveTab();
   const status = await readStatus(tab.id);
-  if (!status?.active)
-    throw new Error('No active GlassWeb capture was found in this tab.');
-
-  const response = await chrome.tabs.sendMessage(tab.id, {
-    type: 'GLASSWEB_CONTENT_STOP',
-    sessionId: status.sessionId,
-  });
-  if (!response?.ok || !response.trace) {
+  if (!status?.active && !status?.partialTrace) {
     throw new Error(
-      response?.error || 'The page recorder did not return a trace.',
+      status?.interrupted
+        ? 'This page changed before the partial recording could be saved.'
+        : 'No active GlassWeb recording was found in this tab.',
     );
   }
 
-  const trace = response.trace;
-  if (includeScreenshot) {
+  let trace = status.partialTrace;
+  if (status.active) {
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: 'GLASSWEB_CONTENT_STOP',
+      sessionId: status.sessionId,
+    });
+    if (!response?.ok || !response.trace) {
+      throw new Error(
+        response?.error || 'The page recorder did not return a recording.',
+      );
+    }
+    trace = response.trace;
+  }
+
+  if (!trace) throw new Error('No recoverable GlassWeb recording was found.');
+
+  if (includeScreenshot && status.active) {
     try {
       trace.page.screenshotDataUrl = await chrome.tabs.captureVisibleTab(
         tab.windowId,
@@ -242,8 +252,21 @@ async function stopCapture(includeScreenshot) {
   return { ok: true };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
+    if (message?.type === 'GLASSWEB_PARTIAL' && sender.tab?.id) {
+      const status = await readStatus(sender.tab.id);
+      if (status?.sessionId !== message.sessionId || !message.trace) {
+        return { ok: false, error: 'Partial recording session mismatch.' };
+      }
+      await writeStatus(sender.tab.id, {
+        ...status,
+        active: false,
+        interrupted: true,
+        partialTrace: message.trace,
+      });
+      return { ok: true };
+    }
     if (message?.type === 'GLASSWEB_START') return startCapture();
     if (message?.type === 'GLASSWEB_STOP') {
       return stopCapture(Boolean(message.includeScreenshot));
@@ -251,9 +274,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'GLASSWEB_STATUS') {
       try {
         const tab = await getActiveTab();
+        const status = await readStatus(tab.id);
         return {
           ok: true,
-          active: Boolean((await readStatus(tab.id))?.active),
+          active: Boolean(status?.active),
+          recoverable: Boolean(status?.partialTrace),
+          interrupted: Boolean(status?.interrupted),
         };
       } catch {
         return { ok: true, active: false };
@@ -269,7 +295,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'loading') void clearStatus(tabId);
+  if (changeInfo.status !== 'loading') return;
+  void (async () => {
+    const status = await readStatus(tabId);
+    if (status?.active) {
+      await writeStatus(tabId, {
+        ...status,
+        active: false,
+        interrupted: true,
+      });
+    }
+  })();
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => void clearStatus(tabId));

@@ -6,16 +6,30 @@ const statusTitle = document.querySelector('#status-title');
 const statusCopy = document.querySelector('#status-copy');
 const error = document.querySelector('#error');
 
-function setStatus(active, message) {
+function setStatus(state, message) {
+  const active = Boolean(state?.active);
+  const recoverable = Boolean(state?.recoverable);
+  const interrupted = Boolean(state?.interrupted);
   statusDot.classList.toggle('active', active);
-  statusTitle.textContent = active ? 'Capturing this tab' : 'Ready to capture';
+  statusDot.classList.toggle('recoverable', recoverable);
+  statusTitle.textContent = active
+    ? 'Watching this page'
+    : recoverable
+      ? 'Page changed — recording recovered'
+      : interrupted
+        ? 'Page changed — recording ended'
+        : 'Ready to watch';
   statusCopy.textContent =
     message ||
     (active
-      ? 'Use the page normally, then return here to export.'
-      : 'One tab. One journey. Browser-visible evidence only.');
+      ? 'Do one thing, then return here and save.'
+      : recoverable
+        ? 'Save what GlassWeb captured before the page changed.'
+        : interrupted
+          ? 'GlassWeb could not recover this partial recording. Start again on the new page.'
+          : 'One page. One action. Browser-visible evidence only.');
   startButton.disabled = active;
-  stopButton.disabled = !active;
+  stopButton.disabled = !active && !recoverable;
 }
 
 async function send(message) {
@@ -32,7 +46,7 @@ startButton.addEventListener('click', async () => {
   try {
     const response = await send({ type: 'GLASSWEB_START' });
     setStatus(
-      true,
+      { active: true },
       `Recording ${response.host}. Values are discarded before storage.`,
     );
   } catch (failure) {
@@ -49,7 +63,10 @@ stopButton.addEventListener('click', async () => {
       type: 'GLASSWEB_STOP',
       includeScreenshot: screenshot.checked,
     });
-    setStatus(false, 'Trace exported. Drop it into the GlassWeb viewer.');
+    setStatus(
+      {},
+      'Recording saved. Return to GlassWeb and choose Open a recording.',
+    );
   } catch (failure) {
     stopButton.disabled = false;
     error.textContent =
@@ -59,9 +76,7 @@ stopButton.addEventListener('click', async () => {
 
 chrome.runtime.sendMessage({ type: 'GLASSWEB_STATUS' }).then((response) => {
   setStatus(
-    Boolean(response?.active),
-    response?.active
-      ? 'Use the page normally, then return here to export.'
-      : undefined,
+    response,
+    response?.active ? 'Do one thing, then return here and save.' : undefined,
   );
 });

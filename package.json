@@ -1,8 +1,8 @@
 {
   "name": "glassweb",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Click anything on a website and understand what happened behind the screen in plain English.",
+  "description": "Record one website action and get a plain-English answer with evidence for your coding agent.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

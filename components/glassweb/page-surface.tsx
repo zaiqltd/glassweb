@@ -14,7 +14,7 @@ interface PageSurfaceProps {
 
 const focusButton = (active: boolean, hiddenFromAi = false, aiMode = false) =>
   cn(
-    'relative outline-none transition-[box-shadow,opacity,filter] duration-300',
+    'outline-none transition-[box-shadow,opacity,filter] duration-300',
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
     active &&
       'z-10 shadow-[0_0_0_1px_var(--primary),0_0_36px_var(--signal-glow)]',
@@ -29,7 +29,7 @@ function OrbitPricingSurface({
   const selected = focus.surfaceEntityId;
 
   return (
-    <div className="flex h-full min-h-[452px] flex-col overflow-hidden border border-border bg-[#f0f1ec] text-[#111615]">
+    <div className="orbit-surface flex h-full min-h-[452px] flex-col overflow-hidden border border-border bg-[#f0f1ec] text-[#111615]">
       <nav className="flex h-12 shrink-0 items-center justify-between border-b border-black/10 px-4">
         <div className="flex items-center gap-2">
           <span className="grid size-5 place-items-center bg-[#111615] text-[8px] font-semibold text-white">
@@ -76,7 +76,7 @@ function OrbitPricingSurface({
               aria-label="Inspect annual billing control"
               aria-pressed={selected === 'visible-toggle'}
               className={cn(
-                'pointer-events-auto flex h-7 items-center gap-1.5 border border-black/15 bg-white/65 px-2 text-[9px] font-medium',
+                'pointer-events-auto relative flex h-8 items-center gap-1.5 border border-black/15 bg-white/65 px-2 text-[10px] font-medium',
                 focusButton(selected === 'visible-toggle'),
               )}
               onClick={() => onSelectEntity('visible-toggle')}
@@ -87,7 +87,7 @@ function OrbitPricingSurface({
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="border border-black/10 bg-white/50 p-3">
+            <div className="orbit-plan orbit-plan-free border border-black/10 bg-white/50 p-3">
               <p className="text-[9px] uppercase tracking-wider text-black/45">
                 Signal
               </p>
@@ -101,7 +101,7 @@ function OrbitPricingSurface({
               </div>
             </div>
 
-            <div className="relative border border-[#0a8483]/45 bg-[#e4f2ef] p-3 shadow-[0_10px_32px_rgba(10,132,131,.12)]">
+            <div className="orbit-plan orbit-plan-pro relative border border-[#0a8483]/45 bg-[#e4f2ef] p-3 shadow-[0_10px_32px_rgba(10,132,131,.12)]">
               <div className="absolute right-2 top-2 flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wider text-[#08706f]">
                 <Radio className="size-2.5" /> Live
               </div>
@@ -112,7 +112,7 @@ function OrbitPricingSurface({
                 aria-label="Inspect the regional Pro price"
                 aria-pressed={selected === 'visible-price'}
                 className={cn(
-                  'pointer-events-auto mt-3 block w-full text-left',
+                  'pointer-events-auto relative mt-3 block w-full text-left',
                   focusButton(selected === 'visible-price', true, aiMode),
                 )}
                 onClick={() => onSelectEntity('visible-price')}
@@ -149,7 +149,7 @@ function OrbitPricingSurface({
                 aria-label="Inspect Start Pro checkout"
                 aria-pressed={selected === 'visible-cta'}
                 className={cn(
-                  'pointer-events-auto mt-4 flex h-8 w-full items-center justify-center gap-1 bg-[#101615] text-[9px] font-medium text-white',
+                  'pointer-events-auto relative mt-4 flex h-9 w-full items-center justify-center gap-1 bg-[#101615] text-[10px] font-medium text-white',
                   focusButton(selected === 'visible-cta', true, aiMode),
                 )}
                 onClick={() => onSelectEntity('visible-cta')}
@@ -159,7 +159,7 @@ function OrbitPricingSurface({
               </button>
             </div>
 
-            <div className="border border-black/10 bg-white/50 p-3">
+            <div className="orbit-plan orbit-plan-scale border border-black/10 bg-white/50 p-3">
               <p className="text-[9px] uppercase tracking-wider text-black/45">
                 Scale
               </p>
@@ -176,7 +176,7 @@ function OrbitPricingSurface({
             aria-label="Inspect product updates form"
             aria-pressed={selected === 'visible-newsletter'}
             className={cn(
-              'pointer-events-auto mt-3 flex w-full items-center justify-between border border-black/10 bg-white/45 px-3 py-2 text-left',
+              'pointer-events-auto relative mt-3 flex w-full items-center justify-between border border-black/10 bg-white/45 px-3 py-2 text-left',
               focusButton(selected === 'visible-newsletter'),
             )}
             onClick={() => onSelectEntity('visible-newsletter')}
@@ -217,15 +217,48 @@ function CapturedSurface({
     .slice(0, 80);
 
   return (
-    <div className="relative h-full min-h-[452px] overflow-hidden border border-border bg-background">
+    <div className="relative flex h-full min-h-[452px] items-start justify-center overflow-hidden border border-border bg-background">
       {trace.page.screenshotDataUrl ? (
-        // Imported data URLs are size-capped and validated before this component renders.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          alt={`Captured view of ${trace.page.title}`}
-          className="h-full w-full object-contain object-top opacity-80"
-          src={trace.page.screenshotDataUrl}
-        />
+        <div
+          className="captured-image-frame relative max-h-full max-w-full overflow-hidden"
+          style={{
+            aspectRatio: `${trace.page.viewport.width} / ${trace.page.viewport.height}`,
+            width: '100%',
+          }}
+        >
+          {/* Imported data URLs are size-capped and validated before rendering. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt={`Captured view of ${trace.page.title}`}
+            className="absolute inset-0 h-full w-full object-fill opacity-80"
+            src={trace.page.screenshotDataUrl}
+          />
+
+          {visibleOverlays.map((entity) => {
+            const bounds = entity.bounds!;
+            return (
+              <button
+                aria-label={`Inspect ${entity.humanLabel}`}
+                className={cn(
+                  'absolute min-h-11 min-w-11 border border-primary/65 bg-primary/8 transition-colors hover:bg-primary/16',
+                  focus.entityIds.includes(entity.id) &&
+                    'shadow-[0_0_0_1px_var(--primary),0_0_24px_var(--signal-glow)]',
+                )}
+                key={entity.id}
+                onClick={() => onSelectEntity(entity.id)}
+                style={{
+                  left: `${(bounds.x / trace.page.viewport.width) * 100}%`,
+                  top: `${(bounds.y / trace.page.viewport.height) * 100}%`,
+                  width: `${(bounds.width / trace.page.viewport.width) * 100}%`,
+                  height: `${(bounds.height / trace.page.viewport.height) * 100}%`,
+                }}
+                type="button"
+              >
+                <span className="sr-only">{entity.humanLabel}</span>
+              </button>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid h-full place-items-center p-8 text-center">
           <div>
@@ -240,31 +273,6 @@ function CapturedSurface({
           </div>
         </div>
       )}
-
-      {visibleOverlays.map((entity) => {
-        const bounds = entity.bounds!;
-        return (
-          <button
-            aria-label={`Inspect ${entity.humanLabel}`}
-            className={cn(
-              'absolute border border-primary/65 bg-primary/8 transition-colors hover:bg-primary/16',
-              focus.entityIds.includes(entity.id) &&
-                'shadow-[0_0_0_1px_var(--primary),0_0_24px_var(--signal-glow)]',
-            )}
-            key={entity.id}
-            onClick={() => onSelectEntity(entity.id)}
-            style={{
-              left: `${(bounds.x / trace.page.viewport.width) * 100}%`,
-              top: `${(bounds.y / trace.page.viewport.height) * 100}%`,
-              width: `${(bounds.width / trace.page.viewport.width) * 100}%`,
-              height: `${(bounds.height / trace.page.viewport.height) * 100}%`,
-            }}
-            type="button"
-          >
-            <span className="sr-only">{entity.humanLabel}</span>
-          </button>
-        );
-      })}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "GlassWeb Recorder",
-  "version": "0.1.0",
-  "description": "Capture one browser-visible journey as a private, redacted GlassWeb evidence trace.",
+  "version": "0.3.0",
+  "description": "Record one browser action and save a private, redacted GlassWeb explanation.",
   "permissions": ["activeTab", "downloads", "scripting", "storage"],
   "background": {
     "service_worker": "background.js"

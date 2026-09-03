@@ -391,8 +391,30 @@ export function getSelectedEntities(
 export function findFocusFromQuestion(
   trace: GlassWebTrace,
   question: string,
-): TraceFocus {
+): TraceFocus | undefined {
   const normalized = question.toLowerCase();
+  const stopWords = new Set([
+    'about',
+    'does',
+    'from',
+    'happen',
+    'how',
+    'into',
+    'page',
+    'recording',
+    'that',
+    'this',
+    'what',
+    'when',
+    'where',
+    'which',
+    'who',
+    'why',
+    'website',
+  ]);
+  const normalizedTokens = new Set(normalized.split(/\W+/).filter(Boolean));
+  const matchesTerm = (term: string) =>
+    term.includes(' ') ? normalized.includes(term) : normalizedTokens.has(term);
   const intentRules: Array<[string[], string]> = [
     [['price', 'cost', 'amount', 'region', 'currency'], 'price'],
     [['checkout', 'pay', 'buy', 'start pro', 'subscribe'], 'checkout'],
@@ -403,24 +425,80 @@ export function findFocusFromQuestion(
 
   for (const [terms, focusId] of intentRules) {
     const candidate = trace.focuses.find((focus) => focus.id === focusId);
-    if (candidate && terms.some((term) => normalized.includes(term))) {
+    if (candidate && terms.some(matchesTerm)) {
       return candidate;
     }
   }
 
-  const questionTerms = new Set(normalized.split(/\W+/).filter(Boolean));
+  const questionTerms = new Set(
+    normalized
+      .split(/\W+/)
+      .filter((term) => term.length >= 3 && !stopWords.has(term)),
+  );
   const scored = trace.focuses
     .map((focus) => {
       const haystack =
         `${focus.label} ${focus.question} ${focus.summary}`.toLowerCase();
+      const focusTerms = new Set(haystack.split(/\W+/).filter(Boolean));
       const score = [...questionTerms].filter((term) =>
-        haystack.includes(term),
+        focusTerms.has(term),
       ).length;
       return { focus, score };
     })
     .sort((a, b) => b.score - a.score);
 
-  return scored[0]?.score ? scored[0].focus : getFocus(trace, 'price');
+  return scored[0]?.score ? scored[0].focus : undefined;
+}
+
+export function getBestStartingFocus(trace: GlassWebTrace): TraceFocus {
+  const entityMap = getEntityMap(trace);
+  return (
+    [...trace.focuses].sort((left, right) => {
+      const score = (focus: TraceFocus) => {
+        const layers = focus.entityIds
+          .map((id) => entityMap.get(id)?.layer)
+          .filter(Boolean);
+        return (
+          Number(layers.includes('service')) * 5 +
+          Number(layers.includes('network')) * 4 +
+          Number(layers.includes('behaviour')) * 2 +
+          Number(focus.relationIds.length > 0) -
+          Number(
+            focus.question.toLowerCase().includes('what makes this page'),
+          ) *
+            6
+        );
+      };
+      return score(right) - score(left);
+    })[0] ?? trace.focuses[0]
+  );
+}
+
+export function createAgentBrief(trace: GlassWebTrace, focus: TraceFocus) {
+  const entityMap = getEntityMap(trace);
+  const relationMap = getRelationMap(trace);
+  const steps = focus.relationIds
+    .map((id) => relationMap.get(id))
+    .filter((relation) => Boolean(relation))
+    .map((relation, index) => {
+      const from = entityMap.get(relation!.from)?.humanLabel ?? relation!.from;
+      const to = entityMap.get(relation!.to)?.humanLabel ?? relation!.to;
+      return `${index + 1}. ${from} -> ${to} [${relation!.certainty}]`;
+    });
+
+  return [
+    '# GlassWeb evidence packet',
+    `Page: ${trace.page.url}`,
+    `Question: ${focus.question}`,
+    `Finding: ${focus.summary}`,
+    '',
+    'Recorded path:',
+    ...(steps.length > 0 ? steps : ['No connected path was recorded.']),
+    '',
+    `Context: ${focus.detail}`,
+    '',
+    'Please identify the most likely cause and the smallest safe fix. Do not claim server behavior or causality that is not supported by the recorded certainty labels.',
+  ].join('\n');
 }
 
 export function certaintyCounts(trace: GlassWebTrace, focus: TraceFocus) {

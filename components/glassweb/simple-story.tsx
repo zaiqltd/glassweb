@@ -3,7 +3,9 @@
 import {
   ArrowRight,
   Bot,
+  CalendarClock,
   CheckCircle2,
+  Copy,
   Eye,
   Mail,
   MousePointerClick,
@@ -13,6 +15,7 @@ import {
   Send,
   Sparkles,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { PageSurface } from '@/components/glassweb/page-surface';
 import { Button } from '@/components/ui/button';
@@ -31,6 +34,7 @@ interface SimpleStoryProps {
   onOpenEvidence: () => void;
   onOpenProof: () => void;
   onReplay: () => void;
+  onCopyBrief: () => void;
 }
 
 interface StoryStep {
@@ -79,9 +83,9 @@ const friendlyStories: Record<string, FriendlyStory> = {
   },
   checkout: {
     shortLabel: 'Start Pro',
-    question: 'Where does Start Pro take my customer?',
+    question: 'What happens after someone clicks Start Pro?',
     answer:
-      'The site creates a fresh checkout with Stripe, then sends the customer there to pay.',
+      'Start Pro asks Orbit to create a Stripe checkout session. This recording stops before the later page change.',
     why: 'If customers cannot pay, you can see whether the button, Orbit, or Stripe is where things stopped.',
     steps: [
       {
@@ -100,9 +104,38 @@ const friendlyStories: Record<string, FriendlyStory> = {
         detail: 'Stripe creates the checkout.',
       },
       {
+        label: 'Stripe returns',
+        title: 'A checkout session',
+        detail: 'The later page change is not in this recording.',
+      },
+    ],
+  },
+  billing: {
+    shortLabel: 'Annual billing',
+    question: 'What changes when I choose Annual?',
+    answer:
+      'The billing control asks Orbit for annual pricing, then replaces the monthly amount on this page.',
+    why: 'If the annual discount looks wrong, you can separate the control, the request, and the price update.',
+    steps: [
+      {
+        label: 'You do',
+        title: 'Choose Annual',
+        detail: 'The billing control receives the click.',
+      },
+      {
+        label: 'The site does',
+        title: 'Changes the billing period',
+        detail: 'Orbit prepares the annual price.',
+      },
+      {
+        label: 'It talks to',
+        title: "Orbit's pricing system",
+        detail: 'The annual amount comes back.',
+      },
+      {
         label: 'You get',
-        title: 'A payment page',
-        detail: 'The customer continues to Stripe.',
+        title: 'An updated price',
+        detail: 'The Pro card changes without leaving the page.',
       },
     ],
   },
@@ -168,7 +201,7 @@ const friendlyStories: Record<string, FriendlyStory> = {
     shortLabel: 'Email signup',
     question: 'Where does the email address go?',
     answer:
-      'The site sends the address to Klaviyo, but GlassWeb does not save the address itself.',
+      'Submitting the form is followed by a request to Klaviyo. GlassWeb does not inspect or save the email value.',
     why: 'You can verify where subscriber information goes without copying private information into the trace.',
     steps: [
       {
@@ -184,7 +217,7 @@ const friendlyStories: Record<string, FriendlyStory> = {
       {
         label: 'It talks to',
         title: 'Klaviyo',
-        detail: 'Klaviyo receives the signup.',
+        detail: 'A signup request reaches the email platform.',
       },
       {
         label: 'GlassWeb keeps',
@@ -220,19 +253,39 @@ function genericStory(trace: GlassWebTrace, focus: TraceFocus): FriendlyStory {
     .map((entity) => ({
       label: layerLabels[entity!.layer],
       title: entity!.humanLabel,
-      detail: entity!.description,
+      detail: {
+        visible: 'This is the part of the page you used.',
+        structure: 'This is the page part behind what you saw.',
+        behaviour: 'The page reacted to your action.',
+        network: 'A browser request happened during this action.',
+        service: 'This is the destination the browser contacted.',
+      }[entity!.layer],
     }));
+
+  const surface = entities.find(
+    (entity) => entity?.id === focus.surfaceEntityId,
+  );
+  const request = entities.find((entity) => entity?.layer === 'network');
+  const service = entities.find((entity) => entity?.layer === 'service');
+  const answer =
+    request && service
+      ? `After “${surface?.humanLabel ?? focus.label}”, the page contacted ${service.humanLabel}. GlassWeb saw the request happen nearby; it cannot prove the click caused it.`
+      : request
+        ? `After “${surface?.humanLabel ?? focus.label}”, the browser sent ${request.humanLabel}. No final service was identified.`
+        : `GlassWeb recorded “${surface?.humanLabel ?? focus.label}”, but no outgoing request could be matched to it.`;
 
   return {
     shortLabel: focus.label,
     question: focus.question,
-    answer: focus.summary,
-    why: focus.detail,
+    answer,
+    why: request
+      ? 'You can hand this exact, bounded evidence to a coding agent without guessing what the browser did.'
+      : 'The missing connection is useful too: it tells you what this recording can and cannot explain.',
     steps,
   };
 }
 
-const focusIcons = [Eye, MousePointerClick, Send, Bot, Mail];
+const focusIcons = [MousePointerClick, Eye, CalendarClock, Send, Bot, Mail];
 
 export function SimpleStory({
   trace,
@@ -242,48 +295,85 @@ export function SimpleStory({
   onOpenEvidence,
   onOpenProof,
   onReplay,
+  onCopyBrief,
 }: SimpleStoryProps) {
-  const story = friendlyStories[focus.id] ?? genericStory(trace, focus);
+  const [showAll, setShowAll] = useState(false);
+  const isDemo = trace.id === 'demo-orbit-pricing';
+  const story =
+    (isDemo ? friendlyStories[focus.id] : undefined) ??
+    genericStory(trace, focus);
   const counts = certaintyCounts(trace, focus);
-  const proofLine =
+  const proofParts = [
+    counts.observed > 0
+      ? `${counts.observed} ${counts.observed === 1 ? 'step was' : 'steps were'} seen directly`
+      : '',
     counts.correlated > 0
-      ? `${counts.observed} connections were seen directly. ${counts.correlated} is shown as likely, not certain.`
-      : `${counts.observed} connections were seen directly in the browser.`;
+      ? `${counts.correlated} ${counts.correlated === 1 ? 'is a timing match' : 'are timing matches'}`
+      : '',
+    counts.inferred > 0
+      ? `${counts.inferred} ${counts.inferred === 1 ? 'is likely' : 'are likely'}`
+      : '',
+    counts.unknown > 0
+      ? `${counts.unknown} ${counts.unknown === 1 ? 'is still unclear' : 'are still unclear'}`
+      : '',
+  ].filter(Boolean);
+  const proofLine = `${proofParts.join('. ')}.`;
+  const demoOrder = [
+    'checkout',
+    'price',
+    'billing',
+    'analytics',
+    'ai',
+    'newsletter',
+  ];
+  const orderedFocuses = isDemo
+    ? [...trace.focuses].sort(
+        (left, right) =>
+          demoOrder.indexOf(left.id) - demoOrder.indexOf(right.id),
+      )
+    : trace.focuses;
+  const visibleFocuses = showAll ? orderedFocuses : orderedFocuses.slice(0, 6);
 
   return (
     <div className="simple-story">
       <section className="simple-hero">
         <div>
           <p className="simple-kicker">
-            <Sparkles aria-hidden="true" /> No code required
+            <Sparkles aria-hidden="true" /> No DevTools required
           </p>
-          <h1>Pick something on a website. Get the story behind it.</h1>
+          <h1>See exactly what happens after a click.</h1>
           <p>
-            GlassWeb watches a website work, then explains what happened, where
-            the data went, and what AI might miss - in plain English.
+            Record one action. GlassWeb turns the hidden browser activity into
+            an answer you can understand — or paste straight into your coding
+            agent.
           </p>
         </div>
         <div className="simple-promise">
           <CheckCircle2 aria-hidden="true" />
           <span>
-            <strong>One question at a time.</strong>
-            Technical details stay hidden until you ask for them.
+            <strong>Answer first. Proof underneath.</strong>
+            Nothing is invented to fill a gap.
           </span>
         </div>
       </section>
 
+      <a className="skip-to-answer" href="#glassweb-answer">
+        Skip to the answer
+      </a>
+
       <div className="simple-workspace">
         <aside className="simple-questions" aria-label="Questions to explore">
           <div>
-            <p className="simple-section-label">Start with a question</p>
-            <h2>What do you want to understand?</h2>
+            <p className="simple-section-label">Choose one question</p>
+            <h2>What should GlassWeb explain?</h2>
           </div>
 
           <div className="simple-question-list">
-            {trace.focuses.map((candidate, index) => {
+            {visibleFocuses.map((candidate, index) => {
               const Icon = focusIcons[index] ?? ScanSearch;
               const content =
-                friendlyStories[candidate.id] ?? genericStory(trace, candidate);
+                (isDemo ? friendlyStories[candidate.id] : undefined) ??
+                genericStory(trace, candidate);
               return (
                 <button
                   aria-pressed={candidate.id === focus.id}
@@ -303,15 +393,26 @@ export function SimpleStory({
                 </button>
               );
             })}
+            {trace.focuses.length > 6 ? (
+              <button
+                className="simple-question-more"
+                onClick={() => setShowAll((current) => !current)}
+                type="button"
+              >
+                {showAll
+                  ? 'Show fewer'
+                  : `Show ${trace.focuses.length - 6} more`}
+              </button>
+            ) : null}
           </div>
         </aside>
 
-        <section className="simple-answer" aria-live="polite">
+        <section className="simple-answer" id="glassweb-answer">
           <div className="simple-answer-top">
-            <div className="simple-answer-copy">
+            <div className="simple-answer-copy" key={focus.id}>
               <p className="simple-section-label">The short answer</p>
               <p className="simple-current-question">{story.question}</p>
-              <h2>{story.answer}</h2>
+              <h2 aria-live="polite">{story.answer}</h2>
               <div className="simple-why">
                 <Sparkles aria-hidden="true" />
                 <div>
@@ -323,7 +424,7 @@ export function SimpleStory({
 
             <div className="simple-page-preview">
               <div className="simple-page-label">
-                <span>Example page</span>
+                <span>{isDemo ? 'Interactive example' : 'Your recording'}</span>
                 <strong>Click anything highlighted</strong>
               </div>
               <PageSurface
@@ -337,15 +438,21 @@ export function SimpleStory({
 
           <div className="simple-steps">
             <p className="simple-section-label">What happened</p>
-            <div className="simple-step-list">
+            <div className="simple-step-list" key={`steps-${focus.id}`}>
               {story.steps.map((step, index) => (
-                <div className="simple-step" key={`${step.label}-${step.title}`}>
+                <div
+                  className="simple-step"
+                  key={`${step.label}-${step.title}`}
+                >
                   <span className="simple-step-number">{index + 1}</span>
                   <small>{step.label}</small>
                   <strong>{step.title}</strong>
                   <p>{step.detail}</p>
                   {index < story.steps.length - 1 ? (
-                    <ArrowRight aria-hidden="true" className="simple-step-arrow" />
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="simple-step-arrow"
+                    />
                   ) : null}
                 </div>
               ))}
@@ -361,10 +468,13 @@ export function SimpleStory({
               </span>
             </div>
             <div className="simple-proof-actions">
+              <Button onClick={onCopyBrief} size="lg">
+                <Copy data-icon="inline-start" /> Copy proof for my AI
+              </Button>
               <Button onClick={onReplay} size="lg" variant="outline">
                 <Play data-icon="inline-start" /> Watch it happen
               </Button>
-              <Button onClick={onOpenEvidence} size="lg">
+              <Button onClick={onOpenEvidence} size="lg" variant="outline">
                 <ReceiptText data-icon="inline-start" /> How do you know?
               </Button>
               <button

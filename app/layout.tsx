@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://glassweb.cae1.chatgpt.site';
-const title = 'GlassWeb — understand any website without reading code';
+const title = 'GlassWeb — see exactly what happens after a click';
 const description =
-  'Click anything on a website. GlassWeb explains what happened, where the data went, and what AI might miss — in plain English.';
+  'Record one action on a website. GlassWeb turns the hidden browser activity into a plain-English answer and a clean evidence packet for your coding agent.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -51,12 +51,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html
+      lang="en"
+      className={`dark ${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

@@ -43,6 +43,36 @@ const withEvidence = (trace: GlassWebTrace): GlassWebTrace => ({
   ],
 });
 
+const relationExplanations: Record<string, string> = {
+  'price-visible': 'The browser painted the returned amount into the Pro card.',
+  'price-format':
+    'The price output changed immediately after regional formatting ran.',
+  'price-request': 'The regional price action sent the pricing request.',
+  'price-service': "Orbit's pricing service answered the request.",
+  'cta-visible':
+    'The visible Start Pro button is backed by the checkout control.',
+  'cta-listener': 'The checkout control reacted to the recorded click.',
+  'cta-request': 'The checkout action sent a request for a new session.',
+  'cta-service': 'Stripe created and returned the checkout session.',
+  'toggle-visible':
+    'The annual control is backed by the billing-period control.',
+  'toggle-listener':
+    'The billing-period control reacted to the recorded click.',
+  'toggle-request': 'Changing the period requested updated pricing.',
+  'track-page': 'The recorded pricing view was the page being measured.',
+  'track-listener':
+    'The analytics action followed the plan appearing; timing supports the match.',
+  'track-request': 'The analytics action sent the Plan Viewed request.',
+  'track-service': 'Segment answered the analytics request.',
+  'email-visible': 'The visible signup is backed by the updates form.',
+  'email-listener': 'The updates form reacted to the recorded submission.',
+  'email-request': 'The submission was followed by one signup request.',
+  'email-service': 'Klaviyo answered the signup request.',
+  'page-document': 'The pricing page structure came from the initial document.',
+  'page-service': 'Orbit served the initial page document.',
+  'hydrate-page': 'The controls became interactive after client code ran.',
+};
+
 export const demoTrace: GlassWebTrace = withEvidence({
   schemaVersion: TRACE_SCHEMA_VERSION,
   id: 'demo-orbit-pricing',
@@ -100,8 +130,7 @@ export const demoTrace: GlassWebTrace = withEvidence({
       layer: 'visible',
       humanLabel: 'Product updates form',
       technicalLabel: 'form#updates',
-      description:
-        'Sends an email address to the mailing provider after consent.',
+      description: 'The form used to request product updates after consent.',
       certainty: 'observed',
     }),
     entity({
@@ -250,7 +279,7 @@ export const demoTrace: GlassWebTrace = withEvidence({
       layer: 'network',
       humanLabel: 'Add newsletter subscriber',
       technicalLabel: 'POST /client/subscriptions',
-      description: 'Writes a consented subscriber to the mailing provider.',
+      description: 'A signup request sent to the mailing provider.',
       certainty: 'observed',
       attributes: { status: 202, durationMs: 151, mime: 'application/json' },
     }),
@@ -453,7 +482,9 @@ export const demoTrace: GlassWebTrace = withEvidence({
     kind: kind as GlassWebTrace['relations'][number]['kind'],
     certainty: certainty as GlassWebTrace['relations'][number]['certainty'],
     evidenceIds: [`ev-${id}`],
-    explanation: `${from} ${kind} ${to}`,
+    explanation:
+      relationExplanations[id as string] ??
+      'The browser recorded this connection during the session.',
   })),
   events: [
     [
@@ -548,7 +579,7 @@ export const demoTrace: GlassWebTrace = withEvidence({
       'event-newsletter-request',
       5754,
       'request',
-      'Subscriber sent to email platform',
+      'Signup request reached email platform',
       'network',
       ['network-newsletter'],
     ],
@@ -590,10 +621,10 @@ export const demoTrace: GlassWebTrace = withEvidence({
     {
       id: 'checkout',
       label: 'Start Pro',
-      question: 'Where does Start Pro take my customer?',
+      question: 'What happens after someone clicks Start Pro?',
       summary: 'Start Pro creates a secure checkout with Stripe.',
       detail:
-        'The customer clicks Start Pro, Orbit starts one checkout, and Stripe returns the payment page. GlassWeb did not see any unexpected company in between.',
+        'The customer clicks Start Pro, Orbit asks for one checkout session, and Stripe creates it. This recording stops before the later page change, so GlassWeb does not claim to have seen it.',
       entityIds: [
         'visible-cta',
         'structure-cta',
@@ -608,6 +639,29 @@ export const demoTrace: GlassWebTrace = withEvidence({
         'cta-service',
       ],
       surfaceEntityId: 'visible-cta',
+    },
+    {
+      id: 'billing',
+      label: 'Annual billing',
+      question: 'What changes when I choose Annual?',
+      summary: 'Annual billing asks Orbit for updated pricing on this page.',
+      detail:
+        'The annual control changes the billing period, requests updated pricing, and the Pro amount changes without leaving the page.',
+      entityIds: [
+        'visible-toggle',
+        'structure-toggle',
+        'behaviour-billing',
+        'network-price',
+        'service-pricing',
+        'visible-price',
+      ],
+      relationIds: [
+        'toggle-visible',
+        'toggle-listener',
+        'toggle-request',
+        'price-service',
+      ],
+      surfaceEntityId: 'visible-toggle',
     },
     {
       id: 'analytics',
@@ -635,7 +689,8 @@ export const demoTrace: GlassWebTrace = withEvidence({
       id: 'ai',
       label: 'What AI sees',
       question: 'Will AI tools see my prices?',
-      summary: 'AI can read the plan names, but some tools may miss the prices.',
+      summary:
+        'AI can read the plan names, but some tools may miss the prices.',
       detail:
         'The first version of the page contains the plan names. A real browser does extra work to add the prices later, so AI tools that leave early never receive the amount.',
       entityIds: [
@@ -653,7 +708,8 @@ export const demoTrace: GlassWebTrace = withEvidence({
       ],
       surfaceEntityId: 'visible-price',
       suggestedLens: 'ai',
-      finding: 'Put the prices in the first version of the page so AI can see them.',
+      finding:
+        'Put the prices in the first version of the page so AI can see them.',
     },
     {
       id: 'newsletter',
@@ -661,7 +717,7 @@ export const demoTrace: GlassWebTrace = withEvidence({
       question: 'Where does this email address go?',
       summary: 'The signup goes to Klaviyo. GlassWeb does not save the email.',
       detail:
-        'GlassWeb saw the signup leave the page and reach Klaviyo. It remembered the destination and discarded the actual email address before saving the recording.',
+        'Submitting the form was followed by a request to Klaviyo. GlassWeb kept the destination and timing, but it did not inspect or save the email value.',
       entityIds: [
         'visible-newsletter',
         'structure-newsletter',
