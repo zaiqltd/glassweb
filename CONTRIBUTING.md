@@ -26,6 +26,7 @@ npm run build
 ```
 
 If you changed the recorder, also run `npm run package:recorder`. If you changed the canonical trace, run `npm run export:demo` and include the updated public trace.
+If you changed the product positioning or social card, run `npm run generate:og` and include the updated PNG.
 
 ## Non-negotiable evidence rules
 
@@ -73,8 +74,9 @@ Large capture or schema changes should begin as an issue so the evidence and com
 
 ## Generated files
 
-- `public/orbit-pricing-demo.glassweb.json` comes from `npm run export:demo`.
+- The public Orbit before, broken, repaired, and check JSON files come from `npm run export:demo`.
 - `public/glassweb-recorder.zip` comes from `npm run package:recorder`.
+- `public/og.png` comes from `npm run generate:og`.
 - Extension PNG icons are derived from `extension/icons/source.svg`.
 
 Do not edit generated JSON or archives by hand.

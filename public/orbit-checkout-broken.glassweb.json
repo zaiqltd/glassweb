@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "demo-orbit-pricing",
-  "title": "Orbit pricing demo",
-  "createdAt": "2026-09-02T18:00:00.000Z",
+  "id": "demo-orbit-pricing-broken",
+  "title": "Orbit checkout · after deploy",
+  "createdAt": "2026-09-03T09:42:00.000Z",
   "durationMs": 6200,
   "page": {
     "origin": "https://orbit.systems",
@@ -300,11 +300,11 @@
       "layer": "network",
       "humanLabel": "Open checkout session",
       "technicalLabel": "POST /api/checkout",
-      "description": "Creates one short-lived Stripe checkout session.",
+      "description": "The checkout request returned an error before a session was created.",
       "certainty": "observed",
       "attributes": {
-        "status": 201,
-        "durationMs": 184,
+        "status": 500,
+        "durationMs": 231,
         "mime": "application/json"
       }
     },
@@ -766,12 +766,13 @@
       "id": "event-checkout-response",
       "timestamp": 4432,
       "kind": "response",
-      "label": "Checkout session created",
-      "layer": "service",
+      "label": "Checkout request failed",
+      "layer": "network",
       "entityIds": [
-        "service-stripe"
+        "network-checkout"
       ],
-      "certainty": "observed"
+      "certainty": "observed",
+      "detail": "500 response"
     },
     {
       "id": "event-newsletter",
@@ -1174,20 +1175,18 @@
       "id": "checkout",
       "label": "Start Pro",
       "question": "What happens after someone clicks Start Pro?",
-      "summary": "Start Pro creates a secure checkout with Stripe.",
-      "detail": "The customer clicks Start Pro, Orbit asks for one checkout session, and Stripe creates it. This recording stops before the later page change, so GlassWeb does not claim to have seen it.",
+      "summary": "Start Pro still sends the checkout request, but it now returns 500.",
+      "detail": "The click and browser action still match the before recording. The first recorded difference is the checkout request: it returned 201 before and 500 after. No successful Stripe session appears in this path.",
       "entityIds": [
         "visible-cta",
         "structure-cta",
         "behaviour-checkout",
-        "network-checkout",
-        "service-stripe"
+        "network-checkout"
       ],
       "relationIds": [
         "cta-visible",
         "cta-listener",
-        "cta-request",
-        "cta-service"
+        "cta-request"
       ],
       "surfaceEntityId": "visible-cta"
     },

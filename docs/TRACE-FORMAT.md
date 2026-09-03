@@ -19,9 +19,16 @@ interface GlassWebTrace {
   events: TraceEvent[];
   evidence: TraceEvidence[];
   focuses: TraceFocus[];
+  capture?: {
+    completeness: 'complete' | 'partial' | 'unknown';
+    endedBy: 'user' | 'navigation' | 'pagehide' | 'unknown';
+    truncated?: boolean;
+  };
   redaction: RedactionReport;
 }
 ```
+
+`capture` is optional for compatibility with early v1 files. New recorders include it so comparison can distinguish a genuinely missing checkpoint from a capture that ended early or hit a safety cap. The first-party recorder waits for the action window and its relevant in-flight requests to settle before marking a user-finished recording complete. It waits at most ten seconds; a timed-out request makes the capture partial. Absence is treated as unknown, never silently upgraded to complete; `truncated: true` always prevents reliable absence claims.
 
 ## Page
 
@@ -58,6 +65,8 @@ interface TraceEntity {
 ```
 
 `humanLabel` explains the object. `technicalLabel` preserves the redacted raw identity. Both are required.
+
+Recorder-produced request entities use `attributes.requestOutcomeSemantics: 'explicit-v1'` when browser instrumentation directly reported whether the transport completed. In that case, `attributes.failed` is a boolean: `true` means an explicit error, abort, timeout, or thrown request; `false` includes completed opaque requests whose HTTP status is unavailable. Older version-1 traces without this marker remain valid, but a status-0 `failed` value is treated as unknown because early recorders inferred it unreliably. A positive HTTP status remains directly usable across recorder versions.
 
 ## Relations
 
@@ -147,6 +156,31 @@ This snippet shows the envelope only and intentionally does not pass validation:
 - New optional fields may be added within version 1 when old readers can safely ignore them.
 - Renaming kinds, changing relation meaning, or weakening certainty semantics requires a new schema version.
 - Producers should keep IDs stable inside one trace; IDs have no global meaning.
+
+## Portable before references
+
+A `*.glassweb-check.json` file wraps one valid v1 trace, the selected action, its stable action fingerprint, and one browser-visible success signal:
+
+```ts
+interface GlassWebCheck {
+  checkVersion: 1;
+  id: string;
+  name: string;
+  createdAt: string;
+  baselineTrace: GlassWebTrace;
+  baselineFocusId: string;
+  actionFingerprint: string;
+  successSignal: {
+    kind: 'request-status' | 'checkpoint-seen';
+    baselineEntityId: string;
+    fingerprint: string;
+    label: string;
+    expectedStatus?: number;
+  };
+}
+```
+
+The wrapper does not change trace v1. A current recording remains an ordinary `.glassweb.json` file. Comparators must match semantic browser identities—such as safe selectors, methods plus redacted paths, and service origins—and must never assume IDs match across recordings.
 
 ## Privacy requirements for producers
 

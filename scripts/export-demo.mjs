@@ -5,18 +5,52 @@ import { fileURLToPath } from 'node:url';
 import { loadGlassWebCore } from './load-core.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const output = resolve(root, 'public', 'orbit-pricing-demo.glassweb.json');
-const { demoTrace, serializeTrace, validateTrace } = await loadGlassWebCore();
-const validation = validateTrace(demoTrace);
+const publicDirectory = resolve(root, 'public');
+const {
+  demoBrokenTrace,
+  demoCheckoutCheck,
+  demoRepairedTrace,
+  demoTrace,
+  serializeGlassWebCheck,
+  serializeTrace,
+  validateGlassWebCheck,
+  validateTrace,
+} = await loadGlassWebCore();
 
-if (!validation.ok) {
-  throw new Error(
-    `Refusing to export an invalid demo trace: ${validation.errors.join(' ')}`,
+const traces = [
+  ['orbit-pricing-demo.glassweb.json', demoTrace],
+  ['orbit-checkout-broken.glassweb.json', demoBrokenTrace],
+  ['orbit-checkout-repaired.glassweb.json', demoRepairedTrace],
+];
+
+await mkdir(publicDirectory, { recursive: true });
+
+for (const [filename, trace] of traces) {
+  const validation = validateTrace(trace);
+  if (!validation.ok) {
+    throw new Error(
+      `Refusing to export invalid demo trace ${filename}: ${validation.errors.join(' ')}`,
+    );
+  }
+  await writeFile(
+    resolve(publicDirectory, filename),
+    serializeTrace(trace),
+    'utf8',
   );
 }
 
-await mkdir(dirname(output), { recursive: true });
-await writeFile(output, serializeTrace(demoTrace), 'utf8');
+const checkValidation = validateGlassWebCheck(demoCheckoutCheck);
+if (!checkValidation.ok) {
+  throw new Error(
+    `Refusing to export an invalid demo check: ${checkValidation.errors.join(' ')}`,
+  );
+}
+await writeFile(
+  resolve(publicDirectory, 'orbit-checkout-working.glassweb-check.json'),
+  serializeGlassWebCheck(demoCheckoutCheck),
+  'utf8',
+);
+
 console.log(
-  `Exported ${demoTrace.entities.length} entities and ${demoTrace.relations.length} relations to public/orbit-pricing-demo.glassweb.json`,
+  `Exported ${traces.length} demo recordings and 1 portable check to public/`,
 );

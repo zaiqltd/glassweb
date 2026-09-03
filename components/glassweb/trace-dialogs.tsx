@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  ArrowRight,
   CheckCircle2,
   CircleDashed,
   Download,
   FileJson2,
   HelpCircle,
+  GitCompareArrows,
   Radio,
   ShieldCheck,
   X,
@@ -14,6 +16,7 @@ import { type ReactNode, useEffect, useId, useRef } from 'react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { TraceComparison } from '@/lib/glassweb/compare';
 import type {
   EvidenceCertainty,
   GlassWebTrace,
@@ -196,7 +199,9 @@ export function CaptureDialog({
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
           <p>
             GlassWeb never saves passwords, what you type into forms, cookies,
-            message bodies, or private URL values.
+            message bodies, URL query values, or fragments. Page paths remain
+            visible so requests can be compared; review a recording before
+            sharing it.
           </p>
         </div>
 
@@ -384,6 +389,133 @@ export function RedactionDialog({
             </ul>
           </div>
         </div>
+      </>
+    </ModalShell>
+  );
+}
+
+export function ComparisonEvidenceDialog({
+  comparison,
+  open,
+  onOpenChange,
+  onOpenXray,
+}: {
+  comparison: TraceComparison | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenXray: () => void;
+}) {
+  if (!comparison) return null;
+
+  const stateLabel = {
+    same: 'Same in both',
+    added: 'New after',
+    removed: 'Not recorded after',
+    changed: 'Changed here',
+    uncertain: 'Not enough proof',
+  } as const;
+  const allTechnicalDetails = comparison.details.some(
+    (step) => step.state !== 'same',
+  )
+    ? comparison.details.filter((step) => step.state !== 'same')
+    : comparison.steps;
+  const technicalDetails = allTechnicalDetails.slice(0, 100);
+
+  return (
+    <ModalShell
+      description="The two recordings are aligned by stable browser-visible identities, not regenerated recording IDs."
+      eyebrow={
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+          <GitCompareArrows className="size-3" /> Before / after proof
+        </div>
+      }
+      footer={
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button
+            onClick={() => {
+              onOpenChange(false);
+              onOpenXray();
+            }}
+          >
+            Open current X-ray <ArrowRight data-icon="inline-end" />
+          </Button>
+        </>
+      }
+      onOpenChange={onOpenChange}
+      open={open}
+      title={comparison.headline}
+      wide
+    >
+      <>
+        <div className="comparison-evidence-summary">
+          <span data-outcome={comparison.outcome}>
+            {comparison.outcome === 'matches'
+              ? 'Still matches'
+              : comparison.outcome === 'unknown'
+                ? 'Cannot compare yet'
+                : 'Difference found'}
+          </span>
+          <p>{comparison.summary}</p>
+        </div>
+
+        <ol className="comparison-evidence-list">
+          {comparison.steps.map((step, index) => (
+            <li className={`is-${step.state}`} key={step.key}>
+              <span className="comparison-evidence-number">{index + 1}</span>
+              <div>
+                <small>{stateLabel[step.state]}</small>
+                <strong>
+                  {step.before?.humanLabel ??
+                    step.after?.humanLabel ??
+                    step.layer}
+                </strong>
+                <p>{step.humanSummary}</p>
+                {step.evidenceWarning || step.timingWarning ? (
+                  <p className="comparison-evidence-warning">
+                    {step.evidenceWarning ?? step.timingWarning}
+                  </p>
+                ) : null}
+              </div>
+              <dl>
+                <div>
+                  <dt>Before</dt>
+                  <dd>{step.expected}</dd>
+                </div>
+                <div>
+                  <dt>After</dt>
+                  <dd>{step.actual}</dd>
+                </div>
+              </dl>
+            </li>
+          ))}
+        </ol>
+
+        <details className="technical-details">
+          <summary>Technical details</summary>
+          <div className="comparison-technical-list">
+            {technicalDetails.map((step) => (
+              <div key={`technical-${step.key}`}>
+                <span>{step.layer}</span>
+                <code>{step.before?.technicalLabel ?? 'Not recorded'}</code>
+                <ArrowRight aria-hidden="true" />
+                <code>{step.after?.technicalLabel ?? 'Not recorded'}</code>
+                <small>
+                  Evidence: {step.certainty} · Match: {step.matchConfidence}
+                </small>
+              </div>
+            ))}
+            {allTechnicalDetails.length > technicalDetails.length ? (
+              <p className="comparison-evidence-warning">
+                {allTechnicalDetails.length - technicalDetails.length} more
+                checkpoints are omitted here to keep the browser responsive. The
+                comparison verdict still evaluates all of them.
+              </p>
+            ) : null}
+          </div>
+        </details>
       </>
     </ModalShell>
   );

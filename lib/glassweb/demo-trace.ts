@@ -734,6 +734,10 @@ export const demoTrace: GlassWebTrace = withEvidence({
       surfaceEntityId: 'visible-newsletter',
     },
   ],
+  capture: {
+    completeness: 'complete',
+    endedBy: 'user',
+  },
   redaction: {
     policyVersion: 'glassweb-safe-metadata-v1',
     appliedAt: '2026-09-02T18:00:06.200Z',

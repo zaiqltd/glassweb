@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "demo-orbit-pricing",
-  "title": "Orbit pricing demo",
-  "createdAt": "2026-09-02T18:00:00.000Z",
+  "id": "demo-orbit-pricing-repaired",
+  "title": "Orbit checkout · after repair",
+  "createdAt": "2026-09-03T10:08:00.000Z",
   "durationMs": 6200,
   "page": {
     "origin": "https://orbit.systems",
@@ -1174,8 +1174,8 @@
       "id": "checkout",
       "label": "Start Pro",
       "question": "What happens after someone clicks Start Pro?",
-      "summary": "Start Pro creates a secure checkout with Stripe.",
-      "detail": "The customer clicks Start Pro, Orbit asks for one checkout session, and Stripe creates it. This recording stops before the later page change, so GlassWeb does not claim to have seen it.",
+      "summary": "The checkout path matches the before recording again.",
+      "detail": "The click, checkout request, 201 response, and Stripe destination all match the before recording. This proves the browser-visible path matches; it does not prove every server-side detail is identical.",
       "entityIds": [
         "visible-cta",
         "structure-cta",

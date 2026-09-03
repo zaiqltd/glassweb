@@ -135,6 +135,11 @@ export interface GlassWebTrace {
   events: TraceEvent[];
   evidence: TraceEvidence[];
   focuses: TraceFocus[];
+  capture?: {
+    completeness: 'complete' | 'partial' | 'unknown';
+    endedBy: 'user' | 'navigation' | 'pagehide' | 'unknown';
+    truncated?: boolean;
+  };
   redaction: RedactionReport;
 }
 

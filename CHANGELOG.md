@@ -2,6 +2,35 @@
 
 All notable changes to GlassWeb are documented here. The project follows semantic versioning once the public API stabilizes.
 
+## 0.4.0 — 2026-09-03
+
+### Added
+
+- Made before-versus-after checking the default product instead of a roadmap idea.
+- Added deterministic action pairing that uses stable browser identities rather than regenerated recording IDs.
+- Added aligned comparison states for matching, added, missing, changed, and uncertain checkpoints.
+- Added a first-difference verdict for request status, missing paths, destination changes, and incomplete evidence.
+- Added a portable `.glassweb-check.json` before-reference format with an explicit browser success checkpoint.
+- Added a bounded before/after fix packet that strips URL query and credential values, quotes page data as untrusted, and states the causality boundary.
+- Added a cinematic repaired-run demo that visibly returns to **Still matches**.
+- Compared every recorded entity and connection in the selected five-layer path instead of trusting the first item in each layer.
+- Added kind-specific request, service, and selector identities; explicit network-failure handling; safe incomplete-capture semantics; and hardened untrusted-data redaction in coding-agent packets.
+- Rebuilt the social preview around the actual before/after product.
+- Added a focused explanation replay, aligned technical proof, two-slot import flow, and mobile comparison stepper.
+- Added trace completeness metadata so interrupted captures never masquerade as reliable missing steps.
+- Added comparison coverage for `201 → 500`, observed network failures, regenerated IDs, multiple requests, missing connections, changed destinations, hostile packet data, repair verification, and saved checks.
+- Added action-aware in-flight request settlement, explicit opaque-versus-failed transport outcomes, and safe compatibility with early status-0 traces.
+- Added full-delta evaluation behind the five-step summary, case-sensitive request identities, endpoint-aware connection comparison, medium-match confirmation, and bounded technical output.
+- Added runtime recorder probes, public artifact parity checks, and a 5,000-action comparison performance regression.
+
+### Changed
+
+- Repositioned GlassWeb as a local-first before/after debugger for website actions.
+- Kept the single-recording explanation and five-layer X-ray as progressive disclosure.
+- Made the open-source-versus-future-paid boundary explicit: local comparison works now; automated hosted checks remain a later layer.
+- Limited fix instructions to proven breakages; neutral changes now ask for intent confirmation before any code edit.
+- Capped and deduplicated single-recording evidence packets, with explicit omission counts and a no-code-change boundary.
+
 ## 0.3.0 — 2026-09-03
 
 ### Changed

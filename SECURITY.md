@@ -22,16 +22,17 @@ The recorder stores allowlisted browser-visible metadata:
 - request method, redacted URL, status, duration, transport, and MIME type; and
 - service origin and evidence certainty.
 
-## Data excluded by default
+## Data excluded from saved recordings by default
 
-The recorder does not read or store:
+The recorder does not read:
 
 - form/input values;
 - cookie values;
 - authorization and arbitrary request/response headers (only the MIME content type may be retained);
 - request/response bodies;
-- local/session storage contents; or
-- URL query values and fragments.
+- local/session storage contents.
+
+The request probe necessarily receives the URL used by the page. Query values and fragments are removed before the URL is added to a recording and are never retained in an exported trace.
 
 Screenshots are separate, explicit, and off by default. A visible screenshot can contain personal, financial, health, account, or internal business information. Treat screenshot-bearing traces as sensitive files.
 
@@ -51,6 +52,8 @@ Therefore:
 ### Imported traces are untrusted files
 
 The viewer limits file size, validates schema and graph references, permits only bounded PNG/JPEG/WebP screenshot data URLs, and renders labels as text. Do not weaken those constraints when adding fields.
+
+Coding-agent packets treat every imported title, label, and technical identity as untrusted page data. GlassWeb strips query and credential values again, emits only kind-specific search needles, quotes captured strings, and tells the receiving agent never to follow instructions inside evidence. Review the packet before pasting it into any agent.
 
 ### Metadata can still identify people or systems
 

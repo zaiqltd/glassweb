@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  ArrowRight,
   Bot,
   Braces,
   ChevronDown,
@@ -33,16 +34,31 @@ import {
   ExplodedView,
   type ViewerLens,
 } from '@/components/glassweb/exploded-view';
+import { CompareStory } from '@/components/glassweb/compare-story';
 import { RuntimeWeave } from '@/components/glassweb/runtime-weave';
 import { SimpleStory } from '@/components/glassweb/simple-story';
 import {
   CaptureDialog,
+  ComparisonEvidenceDialog,
   EvidenceDialog,
   RedactionDialog,
 } from '@/components/glassweb/trace-dialogs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { demoTrace } from '@/lib/glassweb/demo-trace';
+import {
+  demoBrokenTrace,
+  demoCheckoutCheck,
+  demoRepairedTrace,
+} from '@/lib/glassweb/demo-comparison';
+import {
+  baselineFileName,
+  compareTraces,
+  createComparisonAgentPacket,
+  createGlassWebCheck,
+  serializeGlassWebCheck,
+  validateGlassWebCheck,
+  type GlassWebCheck,
+} from '@/lib/glassweb/compare';
 import {
   certaintyCounts,
   createAgentBrief,
@@ -89,12 +105,50 @@ function IconButton({
   );
 }
 
+async function copyText(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return;
+  } catch {
+    const field = document.createElement('textarea');
+    field.value = value;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    // Legacy fallback for browsers that deny the async Clipboard API.
+    // oxlint-disable-next-line typescript/no-deprecated
+    const copied = document.execCommand('copy');
+    field.remove();
+    if (!copied) throw new Error('Clipboard unavailable');
+  }
+}
+
 export function GlassWebApp() {
-  const [trace, setTrace] = useState<GlassWebTrace>(demoTrace);
+  const [trace, setTrace] = useState<GlassWebTrace>(demoBrokenTrace);
   const [focusId, setFocusId] = useState('checkout');
   const [selectedEntityId, setSelectedEntityId] = useState('visible-cta');
-  const [experienceMode, setExperienceMode] = useState<'simple' | 'xray'>(
+  const [experienceMode, setExperienceMode] = useState<
+    'compare' | 'simple' | 'xray'
+  >('compare');
+  const [xrayReturnMode, setXrayReturnMode] = useState<'simple' | 'compare'>(
     'simple',
+  );
+  const [check, setCheck] = useState<GlassWebCheck>(demoCheckoutCheck);
+  const [hasBeforeReference, setHasBeforeReference] = useState(true);
+  const [afterTrace, setAfterTrace] = useState<GlassWebTrace | null>(
+    demoBrokenTrace,
+  );
+  const [selectedAfterFocusId, setSelectedAfterFocusId] = useState<
+    string | undefined
+  >();
+  const [forcePair, setForcePair] = useState(false);
+  const [allowDifferentOrigins, setAllowDifferentOrigins] = useState(false);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
+  const [isDemoComparison, setIsDemoComparison] = useState(true);
+  const [demoScenario, setDemoScenario] = useState<'broken' | 'repaired'>(
+    'broken',
   );
   const [lens, setLens] = useState<ViewerLens>('trace');
   const [zoom, setZoom] = useState(100);
@@ -102,13 +156,40 @@ export function GlassWebApp() {
   const [playhead, setPlayhead] = useState(0);
   const [runtimePlaying, setRuntimePlaying] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [comparisonEvidenceOpen, setComparisonEvidenceOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [redactionOpen, setRedactionOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [queryFocused, setQueryFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const beforeInputRef = useRef<HTMLInputElement>(null);
+  const afterInputRef = useRef<HTMLInputElement>(null);
 
   const focus = useMemo(() => getFocus(trace, focusId), [trace, focusId]);
+  const comparison = useMemo(
+    () =>
+      hasBeforeReference && afterTrace
+        ? compareTraces(
+            check.baselineTrace,
+            afterTrace,
+            check.baselineFocusId,
+            {
+              afterFocusId: selectedAfterFocusId,
+              forcePair,
+              allowDifferentOrigins,
+              successSignal: check.successSignal,
+            },
+          )
+        : null,
+    [
+      afterTrace,
+      allowDifferentOrigins,
+      check,
+      forcePair,
+      hasBeforeReference,
+      selectedAfterFocusId,
+    ],
+  );
   const entityMap = useMemo(() => getEntityMap(trace), [trace]);
   const selectedEntity = entityMap.get(selectedEntityId);
   const counts = useMemo(() => certaintyCounts(trace, focus), [trace, focus]);
@@ -214,37 +295,139 @@ export function GlassWebApp() {
     runQuestion();
   };
 
+  const readGlassWebFile = async (file: File) => {
+    if (file.size > 8 * 1024 * 1024) {
+      throw new Error(
+        'That recording is larger than the safe 8 MB import limit.',
+      );
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await file.text()) as unknown;
+    } catch {
+      throw new Error(
+        'This isn’t a GlassWeb recording. Choose a .glassweb.json file.',
+      );
+    }
+    const checkValidation = validateGlassWebCheck(parsed);
+    if (checkValidation.ok && checkValidation.check) {
+      return { check: checkValidation.check };
+    }
+    const traceValidation = validateTrace(parsed);
+    if (traceValidation.ok && traceValidation.trace) {
+      return { trace: traceValidation.trace };
+    }
+    throw new Error(
+      traceValidation.errors[0] ??
+        'This isn’t a GlassWeb recording. Choose a .glassweb.json file.',
+    );
+  };
+
+  const showTrace = (imported: GlassWebTrace, nextMode: 'simple' | 'xray') => {
+    const firstFocus = getBestStartingFocus(imported);
+    setTrace(imported);
+    setFocusId(firstFocus.id);
+    setSelectedEntityId(firstFocus.surfaceEntityId);
+    setLens(firstFocus.suggestedLens ?? 'trace');
+    setExperienceMode(nextMode);
+    setPlayhead(0);
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      announce('That trace is larger than the safe 8 MB import limit.');
-      return;
-    }
-
     try {
-      const validation = validateTrace(
-        JSON.parse(await file.text()) as unknown,
+      const result = await readGlassWebFile(file);
+      const imported = result.trace ?? result.check?.baselineTrace;
+      if (!imported) throw new Error('That file has no GlassWeb recording.');
+      showTrace(imported, 'simple');
+      announce(`Opened “${imported.title}” offline.`);
+    } catch (failure) {
+      announce(failure instanceof Error ? failure.message : String(failure));
+    }
+  };
+
+  const handleBeforeImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      const result = await readGlassWebFile(file);
+      const nextCheck =
+        result.check ??
+        (result.trace
+          ? createGlassWebCheck(
+              result.trace,
+              getBestStartingFocus(result.trace),
+            )
+          : undefined);
+      if (!nextCheck) throw new Error('That file has no before recording.');
+      setCheck(nextCheck);
+      setHasBeforeReference(true);
+      setAfterTrace(null);
+      setTrace(nextCheck.baselineTrace);
+      const nextFocus = getFocus(
+        nextCheck.baselineTrace,
+        nextCheck.baselineFocusId,
       );
-      if (!validation.ok || !validation.trace) {
-        announce(
-          validation.errors[0] ?? 'That file is not a valid GlassWeb trace.',
-        );
-        return;
+      setFocusId(nextFocus.id);
+      setSelectedEntityId(nextFocus.surfaceEntityId);
+      setSelectedAfterFocusId(undefined);
+      setForcePair(false);
+      setAllowDifferentOrigins(false);
+      setComparisonError(null);
+      setIsDemoComparison(false);
+      setExperienceMode('compare');
+      announce('Before recording ready. Now open the version after your edit.');
+    } catch (failure) {
+      setComparisonError(
+        failure instanceof Error ? failure.message : String(failure),
+      );
+    }
+  };
+
+  const handleAfterImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      if (!hasBeforeReference) {
+        throw new Error('Open the before recording first.');
       }
-      const imported = validation.trace;
-      const firstFocus = getBestStartingFocus(imported);
+      const result = await readGlassWebFile(file);
+      if (!result.trace) {
+        throw new Error(
+          'Choose the recording from after your edit, not a saved before reference.',
+        );
+      }
+      const imported = result.trace;
+      const before = check.baselineTrace;
+      if (
+        imported.id === before.id &&
+        imported.createdAt === before.createdAt
+      ) {
+        throw new Error(
+          'These appear to be the same recording. Choose the version from after your edit.',
+        );
+      }
+      setAfterTrace(imported);
       setTrace(imported);
+      const firstFocus = getBestStartingFocus(imported);
       setFocusId(firstFocus.id);
       setSelectedEntityId(firstFocus.surfaceEntityId);
-      setLens(firstFocus.suggestedLens ?? 'trace');
-      setExperienceMode('simple');
-      setPlayhead(0);
-      window.history.replaceState({}, '', window.location.pathname);
-      announce(`Opened “${imported.title}” offline.`);
-    } catch {
-      announce('GlassWeb could not read that JSON file.');
+      setSelectedAfterFocusId(undefined);
+      setForcePair(false);
+      setAllowDifferentOrigins(false);
+      setComparisonError(null);
+      setIsDemoComparison(false);
+      setExperienceMode('compare');
+      announce('After recording loaded. GlassWeb is comparing the action.');
+    } catch (failure) {
+      setComparisonError(
+        failure instanceof Error ? failure.message : String(failure),
+      );
     }
   };
 
@@ -262,8 +445,103 @@ export function GlassWebApp() {
     announce('Recording saved. Review it before sharing.');
   };
 
+  const exportCheck = () => {
+    const blob = new Blob([serializeGlassWebCheck(check)], {
+      type: 'application/json',
+    });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = baselineFileName(check);
+    anchor.click();
+    URL.revokeObjectURL(href);
+    announce('Before reference saved. Keep it for the next comparison.');
+  };
+
+  const copyComparisonPacket = async () => {
+    if (!afterTrace || !comparison) return;
+    try {
+      await copyText(
+        createComparisonAgentPacket(
+          check.baselineTrace,
+          afterTrace,
+          comparison,
+        ),
+      );
+      announce(
+        comparison.outcome === 'broken'
+          ? 'Fix packet copied. Paste it into your coding agent.'
+          : 'Comparison copied. Paste it into your coding agent.',
+      );
+    } catch {
+      announce('Copy was blocked by this browser.');
+    }
+  };
+
+  const chooseBeforeFocus = (nextFocusId: string) => {
+    const nextFocus = getFocus(check.baselineTrace, nextFocusId);
+    setCheck(createGlassWebCheck(check.baselineTrace, nextFocus));
+    setSelectedAfterFocusId(undefined);
+    setForcePair(false);
+    setComparisonError(null);
+  };
+
+  const openComparisonXray = () => {
+    const nextTrace = afterTrace ?? check.baselineTrace;
+    const nextFocus =
+      comparison?.afterFocus ??
+      getFocus(nextTrace, selectedAfterFocusId ?? focusId);
+    setTrace(nextTrace);
+    setFocusId(nextFocus.id);
+    setSelectedEntityId(nextFocus.surfaceEntityId);
+    setLens('trace');
+    setXrayReturnMode('compare');
+    setExperienceMode('xray');
+  };
+
+  const resetDemoComparison = () => {
+    setCheck(demoCheckoutCheck);
+    setHasBeforeReference(true);
+    setAfterTrace(demoBrokenTrace);
+    setTrace(demoBrokenTrace);
+    setFocusId('checkout');
+    setSelectedEntityId('visible-cta');
+    setSelectedAfterFocusId(undefined);
+    setForcePair(false);
+    setAllowDifferentOrigins(false);
+    setComparisonError(null);
+    setIsDemoComparison(true);
+    setDemoScenario('broken');
+    setExperienceMode('compare');
+  };
+
+  const toggleDemoComparison = () => {
+    const nextScenario = demoScenario === 'broken' ? 'repaired' : 'broken';
+    const nextTrace =
+      nextScenario === 'broken' ? demoBrokenTrace : demoRepairedTrace;
+    setDemoScenario(nextScenario);
+    setAfterTrace(nextTrace);
+    setTrace(nextTrace);
+    setFocusId('checkout');
+    setSelectedEntityId('visible-cta');
+    setSelectedAfterFocusId(undefined);
+    setForcePair(false);
+    setComparisonError(null);
+  };
+
+  const startOwnComparison = () => {
+    setAfterTrace(null);
+    setHasBeforeReference(false);
+    setSelectedAfterFocusId(undefined);
+    setForcePair(false);
+    setAllowDifferentOrigins(false);
+    setComparisonError(null);
+    setIsDemoComparison(false);
+    setExperienceMode('compare');
+  };
+
   const shareView = async () => {
-    if (trace.id !== 'demo-orbit-pricing') {
+    if (!trace.id.startsWith('demo-orbit-pricing')) {
       setRedactionOpen(true);
       announce('Save this recording first, then share the reviewed file.');
       return;
@@ -273,7 +551,7 @@ export function GlassWebApp() {
     url.searchParams.set('lens', lens);
     url.searchParams.set('view', 'xray');
     try {
-      await navigator.clipboard.writeText(url.toString());
+      await copyText(url.toString());
       announce('This view was copied.');
     } catch {
       announce('Copy was blocked by this browser.');
@@ -287,12 +565,14 @@ export function GlassWebApp() {
 
   const openFullXray = (nextLens: ViewerLens = 'trace') => {
     setLens(nextLens);
+    setXrayReturnMode('simple');
     setExperienceMode('xray');
     if (nextLens === 'runtime') setPlayhead(0);
   };
 
   const startReplay = () => {
     setLens('runtime');
+    setXrayReturnMode('simple');
     setExperienceMode('xray');
     setPlayhead(0);
     setRuntimePlaying(true);
@@ -300,7 +580,7 @@ export function GlassWebApp() {
 
   const returnToSimple = () => {
     setRuntimePlaying(false);
-    setExperienceMode('simple');
+    setExperienceMode(xrayReturnMode);
     setLens(focus.suggestedLens === 'ai' ? 'ai' : 'trace');
     const url = new URL(window.location.href);
     url.searchParams.delete('view');
@@ -314,7 +594,7 @@ export function GlassWebApp() {
 
   const copyAgentBrief = async () => {
     try {
-      await navigator.clipboard.writeText(createAgentBrief(trace, focus));
+      await copyText(createAgentBrief(trace, focus));
       announce('Proof copied. Paste it into your coding agent.');
     } catch {
       announce('Copy was blocked by this browser.');
@@ -323,7 +603,7 @@ export function GlassWebApp() {
 
   return (
     <main
-      className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'simple' ? 'is-simple' : ''}`}
+      className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'simple' ? 'is-simple' : ''} ${experienceMode === 'compare' ? 'is-compare' : ''}`}
     >
       <input
         accept=".json,.glassweb,.glassweb.json,application/json"
@@ -333,8 +613,122 @@ export function GlassWebApp() {
         tabIndex={-1}
         type="file"
       />
+      <input
+        accept=".json,.glassweb,.glassweb.json,.glassweb-check.json,application/json"
+        hidden
+        onChange={handleBeforeImport}
+        ref={beforeInputRef}
+        tabIndex={-1}
+        type="file"
+      />
+      <input
+        accept=".json,.glassweb,.glassweb.json,application/json"
+        hidden
+        onChange={handleAfterImport}
+        ref={afterInputRef}
+        tabIndex={-1}
+        type="file"
+      />
 
-      {experienceMode === 'simple' ? (
+      {experienceMode === 'compare' ? (
+        <>
+          <header className="comparison-header">
+            <div className="glassweb-brand">
+              <span className="glassweb-mark">
+                <ScanSearch className="size-4" />
+              </span>
+              <span className="simple-brand-copy">
+                <strong>GlassWeb</strong>
+                <small>Before vs after, explained.</small>
+              </span>
+            </div>
+            <span className="comparison-header-context">
+              {afterTrace ? (
+                <>
+                  <b>Before</b> {check.baselineTrace.title}
+                  <ArrowRight aria-hidden="true" />
+                  <b>After</b> {afterTrace.title}
+                </>
+              ) : (
+                'Your recordings stay on this device'
+              )}
+            </span>
+            <div className="comparison-header-actions">
+              {afterTrace ? (
+                <Button
+                  onClick={() => {
+                    showTrace(afterTrace, 'simple');
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Explain one recording
+                </Button>
+              ) : null}
+              <Button
+                onClick={() => setCaptureOpen(true)}
+                size="sm"
+                variant="outline"
+              >
+                <CircleDot data-icon="inline-start" /> Record my website
+              </Button>
+              <Button
+                onClick={afterTrace ? startOwnComparison : resetDemoComparison}
+                size="sm"
+              >
+                {afterTrace ? (
+                  <Import data-icon="inline-start" />
+                ) : (
+                  <Sparkles data-icon="inline-start" />
+                )}
+                {afterTrace ? 'Use my recordings' : 'See example'}
+              </Button>
+            </div>
+          </header>
+
+          <CompareStory
+            afterTrace={afterTrace}
+            check={check}
+            comparison={comparison}
+            demoScenario={demoScenario}
+            error={comparisonError}
+            hasBeforeReference={hasBeforeReference}
+            isDemo={isDemoComparison}
+            onAfterFocusChange={(nextFocusId) => {
+              setSelectedAfterFocusId(nextFocusId);
+              setForcePair(false);
+              setComparisonError(null);
+            }}
+            onAllowDifferentOrigins={() => {
+              setAllowDifferentOrigins(true);
+              setComparisonError(null);
+            }}
+            onBeforeFocusChange={chooseBeforeFocus}
+            onCopyPacket={copyComparisonPacket}
+            onDownloadCheck={exportCheck}
+            onForcePair={() => {
+              if (
+                !selectedAfterFocusId &&
+                !comparison?.afterFocus &&
+                afterTrace?.focuses[0]
+              ) {
+                setSelectedAfterFocusId(afterTrace.focuses[0].id);
+              }
+              setForcePair(true);
+              setComparisonError(null);
+            }}
+            onOpenAfter={() => afterInputRef.current?.click()}
+            onOpenBefore={() => beforeInputRef.current?.click()}
+            onOpenProof={() => setComparisonEvidenceOpen(true)}
+            onOpenXray={openComparisonXray}
+            onRecord={() => setCaptureOpen(true)}
+            onResetDemo={resetDemoComparison}
+            onStartOwnComparison={startOwnComparison}
+            onToggleDemo={toggleDemoComparison}
+            selectedAfterFocusId={selectedAfterFocusId}
+          />
+        </>
+      ) : experienceMode === 'simple' ? (
         <>
           <header className="simple-header">
             <div className="glassweb-brand">
@@ -347,12 +741,26 @@ export function GlassWebApp() {
               </span>
             </div>
             <span className="simple-example-label">
-              {trace.id === 'demo-orbit-pricing'
+              {trace.id.startsWith('demo-orbit-pricing')
                 ? 'Live example'
                 : 'Your recording'}
               : {trace.title}
             </span>
             <div className="simple-header-actions">
+              <Button
+                onClick={() => {
+                  const nextFocus = getFocus(trace, focusId);
+                  setCheck(createGlassWebCheck(trace, nextFocus));
+                  setHasBeforeReference(true);
+                  setAfterTrace(null);
+                  setIsDemoComparison(false);
+                  setExperienceMode('compare');
+                }}
+                size="sm"
+                variant="outline"
+              >
+                <ArrowRight data-icon="inline-start" /> Compare after an edit
+              </Button>
               <Button
                 className="simple-open-action"
                 onClick={() => fileInputRef.current?.click()}
@@ -393,7 +801,7 @@ export function GlassWebApp() {
                 GLASSWEB
               </span>
               <span className="hidden font-mono text-[9px] tracking-[0.12em] text-muted-foreground xl:inline">
-                ALPHA 001
+                OPEN SOURCE · V0.4
               </span>
             </div>
             <div className="glassweb-location" title={trace.page.url}>
@@ -407,7 +815,9 @@ export function GlassWebApp() {
                 size="sm"
                 variant="ghost"
               >
-                Back to simple view
+                {xrayReturnMode === 'compare'
+                  ? 'Back to comparison'
+                  : 'Back to simple view'}
               </Button>
               <Button
                 className="xray-secondary"
@@ -433,7 +843,7 @@ export function GlassWebApp() {
               </IconButton>
               <IconButton
                 label={
-                  trace.id === 'demo-orbit-pricing'
+                  trace.id.startsWith('demo-orbit-pricing')
                     ? 'Copy this view'
                     : 'Save recording to share'
                 }
@@ -631,7 +1041,10 @@ export function GlassWebApp() {
       <CaptureDialog
         onImport={() => {
           setCaptureOpen(false);
-          fileInputRef.current?.click();
+          if (experienceMode === 'compare') {
+            if (hasBeforeReference) afterInputRef.current?.click();
+            else beforeInputRef.current?.click();
+          } else fileInputRef.current?.click();
         }}
         onOpenChange={setCaptureOpen}
         open={captureOpen}
@@ -648,6 +1061,12 @@ export function GlassWebApp() {
         onOpenChange={setRedactionOpen}
         open={redactionOpen}
         trace={trace}
+      />
+      <ComparisonEvidenceDialog
+        comparison={comparison}
+        onOpenChange={setComparisonEvidenceOpen}
+        onOpenXray={openComparisonXray}
+        open={comparisonEvidenceOpen}
       />
     </main>
   );

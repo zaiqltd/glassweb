@@ -2,9 +2,17 @@
 
 GlassWeb is for people who want to understand a complex web system without first learning the choreography of DevTools. The interface should feel technically serious, visually surprising, and immediately legible.
 
-## Answer first; complexity must be earned
+## Verdict first; complexity must be earned
 
-The default experience is one human question, one short answer, four ordinary-language steps, and why the result matters. Technical layers, raw identities, certainty terminology, and the complete graph appear only after the person asks for proof. The five-layer X-ray is the payoff, not the entrance exam.
+The default experience compares the same action before and after an edit. It gives one verdict, one first recorded difference, and five aligned ordinary-language checkpoints. Technical layers, raw identities, certainty terminology, and the complete graph appear only after the person asks for proof. The single-recording answer and five-layer X-ray are supporting depth, not the entrance exam.
+
+## A difference is not a cause
+
+GlassWeb may say that two recordings differ. It must not say an edit caused the difference, name a root cause the browser did not expose, or call a repair successful beyond the browser-visible path. “First recorded difference” is the product contract.
+
+## Before and after remain visually aligned
+
+The same action occupies the same spatial and narrative position on both sides. Shared checkpoints reveal together; only the first split receives the strongest contrast. Do not show two unrelated full graphs side by side.
 
 ## Keep the real interface as the anchor
 

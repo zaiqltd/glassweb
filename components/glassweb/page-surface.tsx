@@ -10,6 +10,7 @@ interface PageSurfaceProps {
   focus: TraceFocus;
   aiMode: boolean;
   onSelectEntity: (entityId: string) => void;
+  interactive?: boolean;
 }
 
 const focusButton = (active: boolean, hiddenFromAi = false, aiMode = false) =>
@@ -215,9 +216,25 @@ function CapturedSurface({
       return rightScore - leftScore || left.firstSeen - right.firstSeen;
     })
     .slice(0, 80);
+  const drawableEntities = visibleOverlays
+    .filter((entity) => {
+      const bounds = entity.bounds!;
+      return (
+        bounds.width < trace.page.viewport.width * 0.92 ||
+        bounds.height < trace.page.viewport.height * 0.92
+      );
+    })
+    .slice(0, 16);
+  let pageAddress = trace.page.title;
+  try {
+    const url = new URL(trace.page.url);
+    pageAddress = `${url.hostname}${url.pathname === '/' ? '' : url.pathname}`;
+  } catch {
+    // The trace validator already rejects invalid page URLs.
+  }
 
   return (
-    <div className="relative flex h-full min-h-[452px] items-start justify-center overflow-hidden border border-border bg-background">
+    <div className="page-surface-stage relative flex h-full min-h-[452px] items-start justify-center overflow-hidden border border-border bg-background">
       {trace.page.screenshotDataUrl ? (
         <div
           className="captured-image-frame relative max-h-full max-w-full overflow-hidden"
@@ -230,7 +247,7 @@ function CapturedSurface({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt={`Captured view of ${trace.page.title}`}
-            className="absolute inset-0 h-full w-full object-fill opacity-80"
+            className="absolute inset-0 h-full w-full object-contain opacity-80"
             src={trace.page.screenshotDataUrl}
           />
 
@@ -260,15 +277,49 @@ function CapturedSurface({
           })}
         </div>
       ) : (
-        <div className="grid h-full place-items-center p-8 text-center">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              Captured document
-            </p>
-            <p className="mt-3 text-lg font-medium">{trace.page.title}</p>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              This trace does not contain a screenshot. Select a recorded
-              element to unfold its evidence.
+        <div className="recorded-wireframe">
+          <div className="recorded-wireframe-bar">
+            <span aria-hidden="true">
+              <i /> <i /> <i />
+            </span>
+            <code>{pageAddress}</code>
+            <small>Screenshot off</small>
+          </div>
+          <div className="recorded-wireframe-canvas">
+            <div className="recorded-wireframe-skeleton" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            {drawableEntities.map((entity) => {
+              const bounds = entity.bounds!;
+              const active = focus.entityIds.includes(entity.id);
+              return (
+                <button
+                  aria-label={`Inspect ${entity.humanLabel}`}
+                  className={cn(
+                    'recorded-wireframe-element',
+                    active && 'is-active',
+                  )}
+                  key={entity.id}
+                  onClick={() => onSelectEntity(entity.id)}
+                  style={{
+                    left: `${Math.max(0, (bounds.x / trace.page.viewport.width) * 100)}%`,
+                    top: `${Math.max(0, (bounds.y / trace.page.viewport.height) * 100)}%`,
+                    width: `${Math.min(100, Math.max(2, (bounds.width / trace.page.viewport.width) * 100))}%`,
+                    height: `${Math.min(100, Math.max(3, (bounds.height / trace.page.viewport.height) * 100))}%`,
+                  }}
+                  type="button"
+                >
+                  {active ? <span>{entity.humanLabel}</span> : null}
+                </button>
+              );
+            })}
+            <p>
+              Browser positions rebuilt from the recording. No screenshot was
+              saved.
             </p>
           </div>
         </div>
@@ -278,7 +329,7 @@ function CapturedSurface({
 }
 
 export function PageSurface(props: PageSurfaceProps) {
-  return props.trace.id === 'demo-orbit-pricing' ? (
+  const surface = props.trace.id.startsWith('demo-orbit-pricing') ? (
     <OrbitPricingSurface
       aiMode={props.aiMode}
       focus={props.focus}
@@ -290,5 +341,13 @@ export function PageSurface(props: PageSurfaceProps) {
       onSelectEntity={props.onSelectEntity}
       trace={props.trace}
     />
+  );
+
+  return props.interactive === false ? (
+    <div aria-hidden="true" className="page-surface-static" inert>
+      {surface}
+    </div>
+  ) : (
+    surface
   );
 }

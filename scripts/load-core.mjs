@@ -11,6 +11,8 @@ export async function loadGlassWebCore() {
     stdin: {
       contents: [
         "export { demoTrace } from './lib/glassweb/demo-trace.ts';",
+        "export * from './lib/glassweb/demo-comparison.ts';",
+        "export * from './lib/glassweb/compare.ts';",
         "export * from './lib/glassweb/trace-utils.ts';",
         "export * from './lib/glassweb/types.ts';",
       ].join('\n'),

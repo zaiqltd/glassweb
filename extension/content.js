@@ -5,7 +5,9 @@
   const MAX_EVENTS = 2000;
   const MAX_EVIDENCE = 2200;
   const MAX_MESSAGE_BYTES = 12_000;
+  const MAX_IN_FLIGHT_REQUESTS = 256;
   const RECENT_WINDOW_MS = 1800;
+  const STOP_SETTLE_TIMEOUT_MS = 10_000;
 
   if (window[RECORDER_KEY]?.installed) return;
 
@@ -130,7 +132,11 @@
   }
 
   function pushEvidence(source, explanation, eventIds = []) {
-    if (!state || state.evidence.length >= MAX_EVIDENCE) return '';
+    if (!state) return '';
+    if (state.evidence.length >= MAX_EVIDENCE) {
+      state.truncated = true;
+      return '';
+    }
     const id = `evd-${state.evidence.length + 1}`;
     state.evidence.push({
       id,
@@ -153,7 +159,11 @@
         ]);
       return existing.id;
     }
-    if (!entity.evidenceId || state.entities.length >= MAX_ENTITIES) return '';
+    if (!entity.evidenceId) return '';
+    if (state.entities.length >= MAX_ENTITIES) {
+      state.truncated = true;
+      return '';
+    }
     const id = `${entity.layer.slice(0, 3)}-${state.entities.length + 1}`;
     const record = {
       id,
@@ -183,7 +193,10 @@
         existing.evidenceIds = unique([...existing.evidenceIds, evidenceId]);
       return existing.id;
     }
-    if (state.relations.length >= MAX_RELATIONS) return '';
+    if (state.relations.length >= MAX_RELATIONS) {
+      state.truncated = true;
+      return '';
+    }
     const relation = {
       id: `rel-${state.relations.length + 1}`,
       from,
@@ -206,7 +219,11 @@
     certainty = 'observed',
     detail = '',
   ) {
-    if (!state || state.events.length >= MAX_EVENTS) return '';
+    if (!state) return '';
+    if (state.events.length >= MAX_EVENTS) {
+      state.truncated = true;
+      return '';
+    }
     const event = {
       id: `evt-${state.events.length + 1}`,
       timestamp: now(),
@@ -417,7 +434,7 @@
     return { serviceId, host, evidenceId };
   }
 
-  function recordRequest(payload, source = 'instrumentation') {
+  function recordRequest(payload, source = 'instrumentation', startEntry) {
     if (!state || payload?.type !== 'request-end') return;
     const url = safeUrl(payload.url);
     let parsedUrl;
@@ -427,6 +444,9 @@
       return;
     }
     const method = safeText(payload.method || 'GET', 12).toUpperCase();
+    const status = Number(payload.status || 0);
+    const requestFailed =
+      typeof payload.failed === 'boolean' ? payload.failed : undefined;
     const requestEventId = addEvent(
       'request',
       `${method} ${safeText(parsedUrl.pathname || '/', 70)}`,
@@ -451,16 +471,26 @@
       evidenceId: requestEvidence,
       attributes: {
         method,
-        status: Number(payload.status || 0),
+        status,
         durationMs: Math.round(Number(payload.durationMs || 0)),
         transport: safeText(payload.transport || 'resource', 24),
+        ...(requestFailed === undefined
+          ? {}
+          : {
+              failed: requestFailed,
+              requestOutcomeSemantics: 'explicit-v1',
+            }),
       },
     });
     const responseEventId = addEvent(
       'response',
-      payload.failed
+      requestFailed === true
         ? 'Request failed'
-        : `${Number(payload.status || 0) || 'Loaded'} response`,
+        : status > 0
+          ? `${status} response`
+          : requestFailed === false
+            ? 'Request completed; status unavailable'
+            : 'Request result unavailable',
       'network',
       [requestId],
       'observed',
@@ -475,9 +505,8 @@
       `The request URL belongs to ${service.host}.`,
       service.evidenceId,
     );
-    const recent = state.recentInteraction;
-    const correlated =
-      recent && performance.now() - recent.timestamp <= RECENT_WINDOW_MS;
+    const recent = startEntry?.action?.interaction;
+    const correlated = Boolean(recent);
     let initiateRelation = '';
     if (correlated) {
       initiateRelation = addRelation(
@@ -504,7 +533,7 @@
     if (requestEvent)
       requestEvent.entityIds = unique([requestId, service.serviceId]);
     if (correlated) {
-      const seed = state.focusSeeds[state.focusSeeds.length - 1];
+      const seed = startEntry.action.focusSeed;
       if (seed?.surfaceEntityId === recent.visualId) {
         seed.entityIds.push(requestId, service.serviceId);
         seed.relationIds.push(initiateRelation, providedRelation);
@@ -522,23 +551,48 @@
     )
       return;
     try {
-      if (JSON.stringify(message).length > MAX_MESSAGE_BYTES) return;
+      if (JSON.stringify(message).length > MAX_MESSAGE_BYTES) {
+        state.truncated = true;
+        return;
+      }
     } catch {
       return;
     }
     const payload = message.payload;
     if (!payload || typeof payload !== 'object') return;
     if (payload.type === 'request-start') {
-      state.requestStarts.set(String(payload.requestId || ''), {
-        at: performance.now(),
-      });
+      const requestId = safeText(payload.requestId, 120);
+      if (!requestId) return;
+      if (state.requestStarts.size >= MAX_IN_FLIGHT_REQUESTS) {
+        state.truncated = true;
+        return;
+      }
+      const receivedAt = performance.now();
+      const recent = state.recentInteraction;
+      const focusSeed = state.focusSeeds[state.focusSeeds.length - 1];
+      const action =
+        recent &&
+        focusSeed?.surfaceEntityId === recent.visualId &&
+        receivedAt - recent.timestamp >= 0 &&
+        receivedAt - recent.timestamp <= RECENT_WINDOW_MS
+          ? { interaction: { ...recent }, focusSeed }
+          : null;
+      state.requestStarts.set(requestId, { receivedAt, action });
       return;
     }
-    if (payload.type === 'request-end') recordRequest(payload);
+    if (payload.type === 'request-end') {
+      const requestId = safeText(payload.requestId, 120);
+      const startEntry = requestId
+        ? state.requestStarts.get(requestId)
+        : undefined;
+      if (requestId) state.requestStarts.delete(requestId);
+      recordRequest(payload, 'instrumentation', startEntry);
+    }
   }
 
   function handleResources(entries) {
     if (!state) return;
+    if (entries.getEntries().length > 30) state.truncated = true;
     for (const entry of entries.getEntries().slice(0, 30)) {
       if (
         !['script', 'css', 'img', 'link', 'navigation'].includes(
@@ -556,6 +610,7 @@
           status: 0,
           mime: '',
           durationMs: entry.duration,
+          startedAt: entry.startTime,
         },
         'performance',
       );
@@ -578,6 +633,8 @@
       requestStarts: new Map(),
       focusSeeds: [],
       recentInteraction: null,
+      truncated: false,
+      requestSettlementTimedOut: false,
       nodeSequence: 1,
     };
     const eventId = addEvent(
@@ -714,7 +771,14 @@
     });
   }
 
-  function stop(compile = true) {
+  function pendingActionRequestCount(activeState = state) {
+    if (!activeState) return 0;
+    return [...activeState.requestStarts.values()].filter(
+      (entry) => entry.action !== null,
+    ).length;
+  }
+
+  function stop(compile = true, endedBy = 'user') {
     if (!state) return null;
     document.removeEventListener('click', handleInteraction, true);
     document.removeEventListener('change', handleInteraction, true);
@@ -743,6 +807,17 @@
     }
     const finished = state;
     const durationMs = Math.max(1, now());
+    if (finished.focusSeeds.length > 20) finished.truncated = true;
+    const actionSettled =
+      !finished.recentInteraction ||
+      performance.now() - finished.recentInteraction.timestamp >=
+        RECENT_WINDOW_MS;
+    const complete =
+      endedBy === 'user' &&
+      actionSettled &&
+      pendingActionRequestCount(finished) === 0 &&
+      !finished.requestSettlementTimedOut &&
+      !finished.truncated;
     const trace = {
       schemaVersion: 1,
       id: `trace-${crypto.randomUUID()}`,
@@ -760,6 +835,11 @@
       events: finished.events,
       evidence: finished.evidence,
       focuses: makeFocuses(),
+      capture: {
+        completeness: complete ? 'complete' : 'partial',
+        endedBy,
+        truncated: Boolean(finished.truncated),
+      },
       redaction: {
         policyVersion: 'glassweb-safe-metadata-v1',
         appliedAt: new Date().toISOString(),
@@ -786,7 +866,7 @@
     if (!state) return;
     const sessionId = state.sessionId;
     try {
-      const trace = stop(true);
+      const trace = stop(true, 'pagehide');
       if (trace) {
         void chrome.runtime.sendMessage({
           type: 'GLASSWEB_PARTIAL',
@@ -812,11 +892,38 @@
       message?.type === 'GLASSWEB_CONTENT_STOP' &&
       message.sessionId === state?.sessionId
     ) {
-      try {
-        sendResponse({ ok: true, trace: stop(true) });
-      } catch (error) {
-        sendResponse({ ok: false, error: error?.message || String(error) });
-      }
+      const settleStartedAt = performance.now();
+      const finish = () => {
+        try {
+          const trace = stop(true, 'user');
+          sendResponse(
+            trace
+              ? { ok: true, trace }
+              : { ok: false, error: 'The recording ended before it settled.' },
+          );
+        } catch (error) {
+          sendResponse({ ok: false, error: error?.message || String(error) });
+        }
+      };
+      const drain = () => {
+        if (!state) return;
+        const actionSettled =
+          !state.recentInteraction ||
+          performance.now() - state.recentInteraction.timestamp >=
+            RECENT_WINDOW_MS;
+        if (actionSettled && pendingActionRequestCount(state) === 0) {
+          finish();
+          return;
+        }
+        if (performance.now() - settleStartedAt >= STOP_SETTLE_TIMEOUT_MS) {
+          state.requestSettlementTimedOut = true;
+          finish();
+          return;
+        }
+        window.setTimeout(drain, 50);
+      };
+      drain();
+      return true;
     }
   });
 

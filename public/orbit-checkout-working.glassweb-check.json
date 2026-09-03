@@ -1,0 +1,1319 @@
+{
+  "checkVersion": 1,
+  "id": "check-orbit-pricing-page-start-pro",
+  "name": "Start Pro on Orbit pricing page",
+  "createdAt": "2026-09-03T10:19:19.241Z",
+  "baselineTrace": {
+    "schemaVersion": 1,
+    "id": "demo-orbit-pricing",
+    "title": "Orbit pricing demo",
+    "createdAt": "2026-09-02T18:00:00.000Z",
+    "durationMs": 6200,
+    "page": {
+      "origin": "https://orbit.systems",
+      "url": "https://orbit.systems/pricing?region=••",
+      "title": "Orbit pricing page",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "devicePixelRatio": 2
+      }
+    },
+    "entities": [
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-visible-page"
+        ],
+        "id": "visible-page",
+        "kind": "visual-element",
+        "layer": "visible",
+        "humanLabel": "Pricing page",
+        "technicalLabel": "document /pricing",
+        "description": "The complete page a visitor receives and interacts with.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-visible-price"
+        ],
+        "id": "visible-price",
+        "kind": "visual-element",
+        "layer": "visible",
+        "humanLabel": "Regional Pro price",
+        "technicalLabel": "R 1,499 / month",
+        "description": "The price currently painted into the Pro plan card.",
+        "certainty": "observed",
+        "bounds": {
+          "x": 710,
+          "y": 326,
+          "width": 210,
+          "height": 54
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-visible-cta"
+        ],
+        "id": "visible-cta",
+        "kind": "visual-element",
+        "layer": "visible",
+        "humanLabel": "Start Pro button",
+        "technicalLabel": "button[data-plan=\"pro\"]",
+        "description": "Starts the paid subscription checkout journey.",
+        "certainty": "observed",
+        "bounds": {
+          "x": 710,
+          "y": 512,
+          "width": 240,
+          "height": 48
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-visible-toggle"
+        ],
+        "id": "visible-toggle",
+        "kind": "visual-element",
+        "layer": "visible",
+        "humanLabel": "Annual billing toggle",
+        "technicalLabel": "button[aria-pressed]",
+        "description": "Changes which billing period and prices are displayed.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-visible-newsletter"
+        ],
+        "id": "visible-newsletter",
+        "kind": "visual-element",
+        "layer": "visible",
+        "humanLabel": "Product updates form",
+        "technicalLabel": "form#updates",
+        "description": "The form used to request product updates after consent.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-structure-page"
+        ],
+        "id": "structure-page",
+        "kind": "dom-node",
+        "layer": "structure",
+        "humanLabel": "Pricing view",
+        "technicalLabel": "<PricingPage>",
+        "description": "The rendered component containing the plan comparison.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-structure-price"
+        ],
+        "id": "structure-price",
+        "kind": "dom-node",
+        "layer": "structure",
+        "humanLabel": "Price output",
+        "technicalLabel": "<RegionalPrice plan=\"pro\">",
+        "description": "The DOM node updated when regional pricing resolves.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-structure-cta"
+        ],
+        "id": "structure-cta",
+        "kind": "dom-node",
+        "layer": "structure",
+        "humanLabel": "Checkout control",
+        "technicalLabel": "<CheckoutAction plan=\"pro\">",
+        "description": "An interactive control with a registered click listener.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-structure-toggle"
+        ],
+        "id": "structure-toggle",
+        "kind": "dom-node",
+        "layer": "structure",
+        "humanLabel": "Billing period control",
+        "technicalLabel": "<BillingPeriodToggle>",
+        "description": "Switches the pricing view between monthly and annual data.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-structure-newsletter"
+        ],
+        "id": "structure-newsletter",
+        "kind": "dom-node",
+        "layer": "structure",
+        "humanLabel": "Updates form",
+        "technicalLabel": "<UpdatesForm>",
+        "description": "The form boundary and its submit event.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-hydrate"
+        ],
+        "id": "behaviour-hydrate",
+        "kind": "script",
+        "layer": "behaviour",
+        "humanLabel": "Bring pricing controls alive",
+        "technicalLabel": "pricing-client.tsx:hydrate()",
+        "description": "Client code attaches the interactive pricing behaviour.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-price"
+        ],
+        "id": "behaviour-price",
+        "kind": "interaction",
+        "layer": "behaviour",
+        "humanLabel": "Format the regional price",
+        "technicalLabel": "formatRegionalPrice(ZA)",
+        "description": "Turns the returned amount and currency into the visible label.",
+        "certainty": "correlated"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-checkout"
+        ],
+        "id": "behaviour-checkout",
+        "kind": "interaction",
+        "layer": "behaviour",
+        "humanLabel": "Create a checkout",
+        "technicalLabel": "checkout.start(\"pro\")",
+        "description": "Builds the request after the visitor confirms the plan.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-billing"
+        ],
+        "id": "behaviour-billing",
+        "kind": "interaction",
+        "layer": "behaviour",
+        "humanLabel": "Change billing period",
+        "technicalLabel": "pricing.setPeriod(\"annual\")",
+        "description": "Updates plan prices without leaving the page.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-analytics"
+        ],
+        "id": "behaviour-analytics",
+        "kind": "interaction",
+        "layer": "behaviour",
+        "humanLabel": "Measure plan interest",
+        "technicalLabel": "analytics.track(\"Plan Viewed\")",
+        "description": "Records that the Pro plan entered the viewport.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-behaviour-newsletter"
+        ],
+        "id": "behaviour-newsletter",
+        "kind": "interaction",
+        "layer": "behaviour",
+        "humanLabel": "Subscribe for updates",
+        "technicalLabel": "updates.subscribe()",
+        "description": "Handles the explicit newsletter form submission.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-network-document"
+        ],
+        "id": "network-document",
+        "kind": "request",
+        "layer": "network",
+        "humanLabel": "Load pricing page",
+        "technicalLabel": "GET /pricing",
+        "description": "Initial HTML document returned by Orbit.",
+        "certainty": "observed",
+        "attributes": {
+          "status": 200,
+          "durationMs": 96,
+          "mime": "text/html"
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-network-price"
+        ],
+        "id": "network-price",
+        "kind": "request",
+        "layer": "network",
+        "humanLabel": "Load South African pricing",
+        "technicalLabel": "GET /api/pricing?region=••",
+        "description": "Returns currency and plan amounts for the selected region.",
+        "certainty": "observed",
+        "attributes": {
+          "status": 200,
+          "durationMs": 118,
+          "mime": "application/json"
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-network-checkout"
+        ],
+        "id": "network-checkout",
+        "kind": "request",
+        "layer": "network",
+        "humanLabel": "Open checkout session",
+        "technicalLabel": "POST /api/checkout",
+        "description": "Creates one short-lived Stripe checkout session.",
+        "certainty": "observed",
+        "attributes": {
+          "status": 201,
+          "durationMs": 184,
+          "mime": "application/json"
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-network-analytics"
+        ],
+        "id": "network-analytics",
+        "kind": "request",
+        "layer": "network",
+        "humanLabel": "Send product analytics",
+        "technicalLabel": "POST /v1/track",
+        "description": "Sends a plan-view event without captured field values.",
+        "certainty": "observed",
+        "attributes": {
+          "status": 200,
+          "durationMs": 72,
+          "mime": "application/json"
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-network-newsletter"
+        ],
+        "id": "network-newsletter",
+        "kind": "request",
+        "layer": "network",
+        "humanLabel": "Add newsletter subscriber",
+        "technicalLabel": "POST /client/subscriptions",
+        "description": "A signup request sent to the mailing provider.",
+        "certainty": "observed",
+        "attributes": {
+          "status": 202,
+          "durationMs": 151,
+          "mime": "application/json"
+        }
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-service-orbit"
+        ],
+        "id": "service-orbit",
+        "kind": "service",
+        "layer": "service",
+        "humanLabel": "Orbit application",
+        "technicalLabel": "orbit.systems",
+        "description": "The first-party application serving the document and scripts.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-service-pricing"
+        ],
+        "id": "service-pricing",
+        "kind": "service",
+        "layer": "service",
+        "humanLabel": "Regional pricing service",
+        "technicalLabel": "pricing.orbit.systems",
+        "description": "Orbit-owned service that returns regional plan pricing.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-service-stripe"
+        ],
+        "id": "service-stripe",
+        "kind": "service",
+        "layer": "service",
+        "humanLabel": "Payment provider",
+        "technicalLabel": "Stripe",
+        "description": "External provider used for secure payment checkout.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-service-segment"
+        ],
+        "id": "service-segment",
+        "kind": "service",
+        "layer": "service",
+        "humanLabel": "Product analytics",
+        "technicalLabel": "Segment",
+        "description": "External analytics destination observed in browser traffic.",
+        "certainty": "observed"
+      },
+      {
+        "firstSeen": 0,
+        "lastSeen": 6200,
+        "evidenceIds": [
+          "ev-service-klaviyo"
+        ],
+        "id": "service-klaviyo",
+        "kind": "service",
+        "layer": "service",
+        "humanLabel": "Email platform",
+        "technicalLabel": "Klaviyo",
+        "description": "External service handling explicitly requested product updates.",
+        "certainty": "observed"
+      }
+    ],
+    "relations": [
+      {
+        "id": "price-visible",
+        "from": "visible-price",
+        "to": "structure-price",
+        "kind": "renders",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-price-visible"
+        ],
+        "explanation": "The browser painted the returned amount into the Pro card."
+      },
+      {
+        "id": "price-format",
+        "from": "structure-price",
+        "to": "behaviour-price",
+        "kind": "mutates",
+        "certainty": "correlated",
+        "evidenceIds": [
+          "ev-price-format"
+        ],
+        "explanation": "The price output changed immediately after regional formatting ran."
+      },
+      {
+        "id": "price-request",
+        "from": "behaviour-price",
+        "to": "network-price",
+        "kind": "initiates",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-price-request"
+        ],
+        "explanation": "The regional price action sent the pricing request."
+      },
+      {
+        "id": "price-service",
+        "from": "network-price",
+        "to": "service-pricing",
+        "kind": "provided-by",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-price-service"
+        ],
+        "explanation": "Orbit's pricing service answered the request."
+      },
+      {
+        "id": "cta-visible",
+        "from": "visible-cta",
+        "to": "structure-cta",
+        "kind": "renders",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-cta-visible"
+        ],
+        "explanation": "The visible Start Pro button is backed by the checkout control."
+      },
+      {
+        "id": "cta-listener",
+        "from": "structure-cta",
+        "to": "behaviour-checkout",
+        "kind": "listens-to",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-cta-listener"
+        ],
+        "explanation": "The checkout control reacted to the recorded click."
+      },
+      {
+        "id": "cta-request",
+        "from": "behaviour-checkout",
+        "to": "network-checkout",
+        "kind": "initiates",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-cta-request"
+        ],
+        "explanation": "The checkout action sent a request for a new session."
+      },
+      {
+        "id": "cta-service",
+        "from": "network-checkout",
+        "to": "service-stripe",
+        "kind": "provided-by",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-cta-service"
+        ],
+        "explanation": "Stripe created and returned the checkout session."
+      },
+      {
+        "id": "toggle-visible",
+        "from": "visible-toggle",
+        "to": "structure-toggle",
+        "kind": "renders",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-toggle-visible"
+        ],
+        "explanation": "The annual control is backed by the billing-period control."
+      },
+      {
+        "id": "toggle-listener",
+        "from": "structure-toggle",
+        "to": "behaviour-billing",
+        "kind": "listens-to",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-toggle-listener"
+        ],
+        "explanation": "The billing-period control reacted to the recorded click."
+      },
+      {
+        "id": "toggle-request",
+        "from": "behaviour-billing",
+        "to": "network-price",
+        "kind": "initiates",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-toggle-request"
+        ],
+        "explanation": "Changing the period requested updated pricing."
+      },
+      {
+        "id": "track-page",
+        "from": "visible-page",
+        "to": "structure-page",
+        "kind": "renders",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-track-page"
+        ],
+        "explanation": "The recorded pricing view was the page being measured."
+      },
+      {
+        "id": "track-listener",
+        "from": "structure-page",
+        "to": "behaviour-analytics",
+        "kind": "triggers",
+        "certainty": "correlated",
+        "evidenceIds": [
+          "ev-track-listener"
+        ],
+        "explanation": "The analytics action followed the plan appearing; timing supports the match."
+      },
+      {
+        "id": "track-request",
+        "from": "behaviour-analytics",
+        "to": "network-analytics",
+        "kind": "initiates",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-track-request"
+        ],
+        "explanation": "The analytics action sent the Plan Viewed request."
+      },
+      {
+        "id": "track-service",
+        "from": "network-analytics",
+        "to": "service-segment",
+        "kind": "provided-by",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-track-service"
+        ],
+        "explanation": "Segment answered the analytics request."
+      },
+      {
+        "id": "email-visible",
+        "from": "visible-newsletter",
+        "to": "structure-newsletter",
+        "kind": "renders",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-email-visible"
+        ],
+        "explanation": "The visible signup is backed by the updates form."
+      },
+      {
+        "id": "email-listener",
+        "from": "structure-newsletter",
+        "to": "behaviour-newsletter",
+        "kind": "listens-to",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-email-listener"
+        ],
+        "explanation": "The updates form reacted to the recorded submission."
+      },
+      {
+        "id": "email-request",
+        "from": "behaviour-newsletter",
+        "to": "network-newsletter",
+        "kind": "initiates",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-email-request"
+        ],
+        "explanation": "The submission was followed by one signup request."
+      },
+      {
+        "id": "email-service",
+        "from": "network-newsletter",
+        "to": "service-klaviyo",
+        "kind": "provided-by",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-email-service"
+        ],
+        "explanation": "Klaviyo answered the signup request."
+      },
+      {
+        "id": "page-document",
+        "from": "structure-page",
+        "to": "network-document",
+        "kind": "returns",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-page-document"
+        ],
+        "explanation": "The pricing page structure came from the initial document."
+      },
+      {
+        "id": "page-service",
+        "from": "network-document",
+        "to": "service-orbit",
+        "kind": "provided-by",
+        "certainty": "observed",
+        "evidenceIds": [
+          "ev-page-service"
+        ],
+        "explanation": "Orbit served the initial page document."
+      },
+      {
+        "id": "hydrate-page",
+        "from": "behaviour-hydrate",
+        "to": "structure-page",
+        "kind": "mutates",
+        "certainty": "correlated",
+        "evidenceIds": [
+          "ev-hydrate-page"
+        ],
+        "explanation": "The controls became interactive after client code ran."
+      }
+    ],
+    "events": [
+      {
+        "id": "event-nav",
+        "timestamp": 0,
+        "kind": "navigation",
+        "label": "Pricing page loaded",
+        "layer": "network",
+        "entityIds": [
+          "network-document"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-hydrate",
+        "timestamp": 460,
+        "kind": "render",
+        "label": "Pricing controls became interactive",
+        "layer": "behaviour",
+        "entityIds": [
+          "behaviour-hydrate"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-price-request",
+        "timestamp": 720,
+        "kind": "request",
+        "label": "Regional pricing requested",
+        "layer": "network",
+        "entityIds": [
+          "network-price"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-price-render",
+        "timestamp": 860,
+        "kind": "mutation",
+        "label": "South African price appeared",
+        "layer": "visible",
+        "entityIds": [
+          "visible-price",
+          "structure-price"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-track",
+        "timestamp": 1230,
+        "kind": "request",
+        "label": "Plan view measured",
+        "layer": "network",
+        "entityIds": [
+          "network-analytics"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-toggle",
+        "timestamp": 2740,
+        "kind": "click",
+        "label": "Annual billing selected",
+        "layer": "visible",
+        "entityIds": [
+          "visible-toggle"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-reprice",
+        "timestamp": 2870,
+        "kind": "mutation",
+        "label": "Annual price rendered",
+        "layer": "visible",
+        "entityIds": [
+          "visible-price"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-cta",
+        "timestamp": 4210,
+        "kind": "click",
+        "label": "Start Pro selected",
+        "layer": "visible",
+        "entityIds": [
+          "visible-cta"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-checkout",
+        "timestamp": 4248,
+        "kind": "request",
+        "label": "Checkout session requested",
+        "layer": "network",
+        "entityIds": [
+          "network-checkout"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-checkout-response",
+        "timestamp": 4432,
+        "kind": "response",
+        "label": "Checkout session created",
+        "layer": "service",
+        "entityIds": [
+          "service-stripe"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-newsletter",
+        "timestamp": 5730,
+        "kind": "submit",
+        "label": "Product updates requested",
+        "layer": "visible",
+        "entityIds": [
+          "visible-newsletter"
+        ],
+        "certainty": "observed"
+      },
+      {
+        "id": "event-newsletter-request",
+        "timestamp": 5754,
+        "kind": "request",
+        "label": "Signup request reached email platform",
+        "layer": "network",
+        "entityIds": [
+          "network-newsletter"
+        ],
+        "certainty": "observed"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "ev-visible-page",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Pricing page”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-visible-price",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Regional Pro price”.",
+        "eventIds": [
+          "event-price-render",
+          "event-reprice"
+        ]
+      },
+      {
+        "id": "ev-visible-cta",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Start Pro button”.",
+        "eventIds": [
+          "event-cta"
+        ]
+      },
+      {
+        "id": "ev-visible-toggle",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Annual billing toggle”.",
+        "eventIds": [
+          "event-toggle"
+        ]
+      },
+      {
+        "id": "ev-visible-newsletter",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Product updates form”.",
+        "eventIds": [
+          "event-newsletter"
+        ]
+      },
+      {
+        "id": "ev-structure-page",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Pricing view”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-structure-price",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Price output”.",
+        "eventIds": [
+          "event-price-render"
+        ]
+      },
+      {
+        "id": "ev-structure-cta",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Checkout control”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-structure-toggle",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Billing period control”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-structure-newsletter",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Updates form”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-behaviour-hydrate",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Bring pricing controls alive”.",
+        "eventIds": [
+          "event-hydrate"
+        ]
+      },
+      {
+        "id": "ev-behaviour-price",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Format the regional price”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-behaviour-checkout",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Create a checkout”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-behaviour-billing",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Change billing period”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-behaviour-analytics",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Measure plan interest”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-behaviour-newsletter",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Subscribe for updates”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-network-document",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Load pricing page”.",
+        "eventIds": [
+          "event-nav"
+        ]
+      },
+      {
+        "id": "ev-network-price",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Load South African pricing”.",
+        "eventIds": [
+          "event-price-request"
+        ]
+      },
+      {
+        "id": "ev-network-checkout",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Open checkout session”.",
+        "eventIds": [
+          "event-checkout"
+        ]
+      },
+      {
+        "id": "ev-network-analytics",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Send product analytics”.",
+        "eventIds": [
+          "event-track"
+        ]
+      },
+      {
+        "id": "ev-network-newsletter",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Add newsletter subscriber”.",
+        "eventIds": [
+          "event-newsletter-request"
+        ]
+      },
+      {
+        "id": "ev-service-orbit",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Orbit application”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-service-pricing",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Regional pricing service”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-service-stripe",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Payment provider”.",
+        "eventIds": [
+          "event-checkout-response"
+        ]
+      },
+      {
+        "id": "ev-service-segment",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Product analytics”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-service-klaviyo",
+        "source": "dom",
+        "explanation": "The instrumented demo directly recorded “Email platform”.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-price-visible",
+        "source": "instrumentation",
+        "explanation": "The browser painted the returned amount into the Pro card.",
+        "eventIds": [
+          "event-price-render",
+          "event-reprice"
+        ]
+      },
+      {
+        "id": "ev-price-format",
+        "source": "instrumentation",
+        "explanation": "The price output changed immediately after regional formatting ran.",
+        "eventIds": [
+          "event-price-render"
+        ]
+      },
+      {
+        "id": "ev-price-request",
+        "source": "instrumentation",
+        "explanation": "The regional price action sent the pricing request.",
+        "eventIds": [
+          "event-price-request"
+        ]
+      },
+      {
+        "id": "ev-price-service",
+        "source": "instrumentation",
+        "explanation": "Orbit's pricing service answered the request.",
+        "eventIds": [
+          "event-price-request"
+        ]
+      },
+      {
+        "id": "ev-cta-visible",
+        "source": "instrumentation",
+        "explanation": "The visible Start Pro button is backed by the checkout control.",
+        "eventIds": [
+          "event-cta"
+        ]
+      },
+      {
+        "id": "ev-cta-listener",
+        "source": "instrumentation",
+        "explanation": "The checkout control reacted to the recorded click.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-cta-request",
+        "source": "instrumentation",
+        "explanation": "The checkout action sent a request for a new session.",
+        "eventIds": [
+          "event-checkout"
+        ]
+      },
+      {
+        "id": "ev-cta-service",
+        "source": "instrumentation",
+        "explanation": "Stripe created and returned the checkout session.",
+        "eventIds": [
+          "event-checkout",
+          "event-checkout-response"
+        ]
+      },
+      {
+        "id": "ev-toggle-visible",
+        "source": "instrumentation",
+        "explanation": "The annual control is backed by the billing-period control.",
+        "eventIds": [
+          "event-toggle"
+        ]
+      },
+      {
+        "id": "ev-toggle-listener",
+        "source": "instrumentation",
+        "explanation": "The billing-period control reacted to the recorded click.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-toggle-request",
+        "source": "instrumentation",
+        "explanation": "Changing the period requested updated pricing.",
+        "eventIds": [
+          "event-price-request"
+        ]
+      },
+      {
+        "id": "ev-track-page",
+        "source": "instrumentation",
+        "explanation": "The recorded pricing view was the page being measured.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-track-listener",
+        "source": "instrumentation",
+        "explanation": "The analytics action followed the plan appearing; timing supports the match.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-track-request",
+        "source": "instrumentation",
+        "explanation": "The analytics action sent the Plan Viewed request.",
+        "eventIds": [
+          "event-track"
+        ]
+      },
+      {
+        "id": "ev-track-service",
+        "source": "instrumentation",
+        "explanation": "Segment answered the analytics request.",
+        "eventIds": [
+          "event-track"
+        ]
+      },
+      {
+        "id": "ev-email-visible",
+        "source": "instrumentation",
+        "explanation": "The visible signup is backed by the updates form.",
+        "eventIds": [
+          "event-newsletter"
+        ]
+      },
+      {
+        "id": "ev-email-listener",
+        "source": "instrumentation",
+        "explanation": "The updates form reacted to the recorded submission.",
+        "eventIds": []
+      },
+      {
+        "id": "ev-email-request",
+        "source": "instrumentation",
+        "explanation": "The submission was followed by one signup request.",
+        "eventIds": [
+          "event-newsletter-request"
+        ]
+      },
+      {
+        "id": "ev-email-service",
+        "source": "instrumentation",
+        "explanation": "Klaviyo answered the signup request.",
+        "eventIds": [
+          "event-newsletter-request"
+        ]
+      },
+      {
+        "id": "ev-page-document",
+        "source": "instrumentation",
+        "explanation": "The pricing page structure came from the initial document.",
+        "eventIds": [
+          "event-nav"
+        ]
+      },
+      {
+        "id": "ev-page-service",
+        "source": "instrumentation",
+        "explanation": "Orbit served the initial page document.",
+        "eventIds": [
+          "event-nav"
+        ]
+      },
+      {
+        "id": "ev-hydrate-page",
+        "source": "instrumentation",
+        "explanation": "The controls became interactive after client code ran.",
+        "eventIds": [
+          "event-hydrate"
+        ]
+      }
+    ],
+    "focuses": [
+      {
+        "id": "price",
+        "label": "This price",
+        "question": "Why am I seeing R1,499?",
+        "summary": "The R1,499 price came from Orbit’s pricing service.",
+        "detail": "The page asked for the South African Pro price, received R1,499, and displayed it here. GlassWeb saw the events happen together but cannot see the private code joining the final two moments.",
+        "entityIds": [
+          "visible-price",
+          "structure-price",
+          "behaviour-price",
+          "network-price",
+          "service-pricing"
+        ],
+        "relationIds": [
+          "price-visible",
+          "price-format",
+          "price-request",
+          "price-service"
+        ],
+        "surfaceEntityId": "visible-price",
+        "finding": "AI crawlers that do not execute JavaScript never receive this price."
+      },
+      {
+        "id": "checkout",
+        "label": "Start Pro",
+        "question": "What happens after someone clicks Start Pro?",
+        "summary": "Start Pro creates a secure checkout with Stripe.",
+        "detail": "The customer clicks Start Pro, Orbit asks for one checkout session, and Stripe creates it. This recording stops before the later page change, so GlassWeb does not claim to have seen it.",
+        "entityIds": [
+          "visible-cta",
+          "structure-cta",
+          "behaviour-checkout",
+          "network-checkout",
+          "service-stripe"
+        ],
+        "relationIds": [
+          "cta-visible",
+          "cta-listener",
+          "cta-request",
+          "cta-service"
+        ],
+        "surfaceEntityId": "visible-cta"
+      },
+      {
+        "id": "billing",
+        "label": "Annual billing",
+        "question": "What changes when I choose Annual?",
+        "summary": "Annual billing asks Orbit for updated pricing on this page.",
+        "detail": "The annual control changes the billing period, requests updated pricing, and the Pro amount changes without leaving the page.",
+        "entityIds": [
+          "visible-toggle",
+          "structure-toggle",
+          "behaviour-billing",
+          "network-price",
+          "service-pricing",
+          "visible-price"
+        ],
+        "relationIds": [
+          "toggle-visible",
+          "toggle-listener",
+          "toggle-request",
+          "price-service"
+        ],
+        "surfaceEntityId": "visible-toggle"
+      },
+      {
+        "id": "analytics",
+        "label": "Who gets data",
+        "question": "Which outside company is contacted?",
+        "summary": "Segment receives a “Plan Viewed” message from this page.",
+        "detail": "The message is sent shortly after the Pro card appears. GlassWeb keeps the destination and timing, but it does not save the message body or anyone’s identity.",
+        "entityIds": [
+          "visible-page",
+          "structure-page",
+          "behaviour-analytics",
+          "network-analytics",
+          "service-segment"
+        ],
+        "relationIds": [
+          "track-page",
+          "track-listener",
+          "track-request",
+          "track-service"
+        ],
+        "surfaceEntityId": "visible-page"
+      },
+      {
+        "id": "ai",
+        "label": "What AI sees",
+        "question": "Will AI tools see my prices?",
+        "summary": "AI can read the plan names, but some tools may miss the prices.",
+        "detail": "The first version of the page contains the plan names. A real browser does extra work to add the prices later, so AI tools that leave early never receive the amount.",
+        "entityIds": [
+          "visible-price",
+          "structure-price",
+          "behaviour-hydrate",
+          "network-price",
+          "service-pricing"
+        ],
+        "relationIds": [
+          "price-visible",
+          "price-format",
+          "price-request",
+          "price-service"
+        ],
+        "surfaceEntityId": "visible-price",
+        "suggestedLens": "ai",
+        "finding": "Put the prices in the first version of the page so AI can see them."
+      },
+      {
+        "id": "newsletter",
+        "label": "Email signup",
+        "question": "Where does this email address go?",
+        "summary": "The signup goes to Klaviyo. GlassWeb does not save the email.",
+        "detail": "Submitting the form was followed by a request to Klaviyo. GlassWeb kept the destination and timing, but it did not inspect or save the email value.",
+        "entityIds": [
+          "visible-newsletter",
+          "structure-newsletter",
+          "behaviour-newsletter",
+          "network-newsletter",
+          "service-klaviyo"
+        ],
+        "relationIds": [
+          "email-visible",
+          "email-listener",
+          "email-request",
+          "email-service"
+        ],
+        "surfaceEntityId": "visible-newsletter"
+      }
+    ],
+    "capture": {
+      "completeness": "complete",
+      "endedBy": "user"
+    },
+    "redaction": {
+      "policyVersion": "glassweb-safe-metadata-v1",
+      "appliedAt": "2026-09-02T18:00:06.200Z",
+      "removed": [
+        "Cookie values",
+        "Authorization headers",
+        "Form values",
+        "Request and response bodies",
+        "URL query values"
+      ],
+      "retained": [
+        "Hostnames and redacted routes",
+        "Methods and status codes",
+        "Timing and MIME types",
+        "Safe interface labels",
+        "Evidence certainty"
+      ]
+    }
+  },
+  "baselineFocusId": "checkout",
+  "actionFingerprint": "visible:visual-element:button data plan pro:start pro button|behaviour:interaction:checkout start pro",
+  "successSignal": {
+    "kind": "request-status",
+    "baselineEntityId": "network-checkout",
+    "fingerprint": "network:POST:/api/checkout",
+    "label": "Open checkout session",
+    "expectedStatus": 201
+  }
+}

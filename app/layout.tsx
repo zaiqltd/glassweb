@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://glassweb.cae1.chatgpt.site';
-const title = 'GlassWeb — see exactly what happens after a click';
+const title = 'GlassWeb — find what changed after an edit';
 const description =
-  'Record one action on a website. GlassWeb turns the hidden browser activity into a plain-English answer and a clean evidence packet for your coding agent.';
+  'Record one website action before and after an edit. GlassWeb finds the first browser-visible difference, explains it plainly, and prepares a bounded fix packet for your coding agent.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'GlassWeb — See the system behind the screen.',
+        alt: 'GlassWeb — find the first browser-visible difference after an edit.',
       },
     ],
   },

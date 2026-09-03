@@ -279,7 +279,7 @@ function genericStory(trace: GlassWebTrace, focus: TraceFocus): FriendlyStory {
     question: focus.question,
     answer,
     why: request
-      ? 'You can hand this exact, bounded evidence to a coding agent without guessing what the browser did.'
+      ? 'You can hand this bounded observation to a coding agent to explain what to inspect, without pretending one recording proves a break.'
       : 'The missing connection is useful too: it tells you what this recording can and cannot explain.',
     steps,
   };
@@ -341,11 +341,10 @@ export function SimpleStory({
           <p className="simple-kicker">
             <Sparkles aria-hidden="true" /> No DevTools required
           </p>
-          <h1>See exactly what happens after a click.</h1>
+          <h1>Understand one recording, without DevTools.</h1>
           <p>
-            Record one action. GlassWeb turns the hidden browser activity into
-            an answer you can understand — or paste straight into your coding
-            agent.
+            GlassWeb turns one recorded action into a plain-English answer and
+            proof. Made an edit? Compare it with another recording.
           </p>
         </div>
         <div className="simple-promise">

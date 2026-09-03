@@ -75,6 +75,7 @@ function installPageProbe(sessionId) {
         status: response.status,
         mime: response.headers.get('content-type') || '',
         durationMs: performance.now() - startedAt,
+        failed: false,
       });
       return response;
     } catch (error) {
@@ -118,23 +119,34 @@ function installPageProbe(sessionId) {
       url: metadata.url,
       startedAt,
     });
-    this.addEventListener(
-      'loadend',
-      () => {
-        emit({
-          type: 'request-end',
-          requestId: metadata.requestId,
-          transport: 'xhr',
-          method: metadata.method,
-          url: this.responseURL || metadata.url,
-          status: this.status,
-          mime: this.getResponseHeader('content-type') || '',
-          durationMs: performance.now() - startedAt,
-        });
-      },
-      { once: true },
-    );
-    return originalSend.apply(this, args);
+    let finished = false;
+    const finishRequest = (failed) => {
+      if (finished) return;
+      finished = true;
+      emit({
+        type: 'request-end',
+        requestId: metadata.requestId,
+        transport: 'xhr',
+        method: metadata.method,
+        url: this.responseURL || metadata.url,
+        status: this.status,
+        mime: this.getResponseHeader('content-type') || '',
+        durationMs: performance.now() - startedAt,
+        failed,
+      });
+    };
+    this.addEventListener('load', () => finishRequest(false), { once: true });
+    for (const eventName of ['error', 'abort', 'timeout']) {
+      this.addEventListener(eventName, () => finishRequest(true), {
+        once: true,
+      });
+    }
+    try {
+      return originalSend.apply(this, args);
+    } catch (error) {
+      finishRequest(true);
+      throw error;
+    }
   };
 
   const stop = () => {
