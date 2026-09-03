@@ -7,6 +7,7 @@
 <p align="center"><strong>Click any interface. Unfold the browser-visible system that made it happen.</strong></p>
 
 <p align="center">
+  <a href="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml"><img alt="Verify" src="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-63e7f4" />
   <img alt="Chrome MV3" src="https://img.shields.io/badge/recorder-Chrome%20MV3-63e7f4" />
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-63e7f4" />

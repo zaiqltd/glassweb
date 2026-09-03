@@ -4,6 +4,13 @@
   "private": true,
   "description": "Click any interface and unfold the browser-visible system behind it.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaiqltd/glassweb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zaiqltd/glassweb/issues"
+  },
   "keywords": [
     "browser-tools",
     "developer-tools",
