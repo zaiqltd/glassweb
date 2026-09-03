@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible viewer, trace, or recorder problem
+title: '[Bug]: '
+labels: [bug]
+body:
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Viewer
+        - Chrome recorder
+        - Trace format or import
+        - Packaging or build
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What happened?
+      description: Include what you expected and what GlassWeb did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Give the smallest safe set of steps. Do not attach private traces or credentials.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: macOS 15, Chrome 140, Node 22.13
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials, personal data, and private URLs from this report.
+          required: true

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GlassWeb Recorder</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="mark" aria-hidden="true">⌁</span>
+      <div>
+        <strong>GLASSWEB</strong>
+        <span>RECORDER 001</span>
+      </div>
+    </header>
+
+    <main>
+      <div class="status-row">
+        <span class="status-dot" id="status-dot"></span>
+        <div>
+          <strong id="status-title">Ready to capture</strong>
+          <p id="status-copy">
+            One tab. One journey. Browser-visible evidence only.
+          </p>
+        </div>
+      </div>
+
+      <button id="start" type="button">Start capture</button>
+      <button id="stop" type="button" disabled>Stop and export trace</button>
+
+      <label class="screenshot-option">
+        <input id="screenshot" type="checkbox" />
+        <span>
+          <strong>Include a visible screenshot</strong>
+          <small
+            >Off by default. Screenshots can contain private information.</small
+          >
+        </span>
+      </label>
+
+      <div class="privacy">
+        <strong>Discarded before storage</strong>
+        <p>
+          Form values · cookie/auth values · non-MIME headers · bodies · query
+          values
+        </p>
+      </div>
+
+      <p class="error" id="error" role="alert"></p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

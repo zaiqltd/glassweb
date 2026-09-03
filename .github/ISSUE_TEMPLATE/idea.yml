@@ -1,0 +1,32 @@
+name: Product idea
+description: Propose a clearer explanation, capture source, or evidence lens
+title: '[Idea]: '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: confusion
+    attributes:
+      label: What is currently hard to understand?
+      description: Start with the human confusion, not the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What browser evidence could support it?
+      description: Say whether the result would be observed, correlated, inferred, or unknown.
+    validations:
+      required: true
+  - type: textarea
+    id: experience
+    attributes:
+      label: What should the person see or do?
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and permission impact
+      description: Note any new data access, capture, network call, or browser permission.
+    validations:
+      required: true
