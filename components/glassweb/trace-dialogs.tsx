@@ -148,49 +148,46 @@ export function CaptureDialog({
 }) {
   return (
     <ModalShell
-      description="Install the desktop recorder once, do the one thing you want explained, then open the saved recording here."
+      description="GlassWeb currently uses a small experimental Chrome extension. It watches one action, saves a file, and uploads nothing."
       footer={
         <>
           <Button variant="outline" onClick={onImport}>
-            <FileJson2 data-icon="inline-start" /> I have a recording
+            <FileJson2 data-icon="inline-start" /> Open my GlassWeb file
           </Button>
           <a
             className={cn(buttonVariants({ variant: 'default' }))}
             download
             href="/glassweb-recorder.zip"
           >
-            <Download className="size-4" /> Get the Chrome recorder
+            <Download className="size-4" /> Download the Chrome extension
           </a>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title="Record one action on your website"
+      title="Use GlassWeb on your website"
     >
       <>
         <ol className="capture-steps">
           <li>
             <span>01</span>
             <div>
-              <strong>Install the desktop recorder</strong>
-              <p>Download the ZIP and load its folder into Chrome once.</p>
+              <strong>Add it to desktop Chrome</strong>
+              <p>Download the ZIP and load the folder once.</p>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
-              <strong>Start watching, then do one thing</strong>
-              <p>Click a button, submit a form, or reproduce the problem.</p>
+              <strong>Do the one thing you want explained</strong>
+              <p>Press Record, click the button or form, then stop.</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
-              <strong>Stop and save</strong>
-              <p>
-                Return here and choose Open a recording. GlassWeb turns it into
-                a simple answer.
-              </p>
+              <strong>Open the saved file here</strong>
+              <p>GlassWeb turns it into a plain answer on this device.</p>
             </div>
           </li>
         </ol>
@@ -198,15 +195,13 @@ export function CaptureDialog({
         <div className="flex items-start gap-2 border border-primary/25 bg-primary/6 p-3 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
           <p>
-            GlassWeb never saves passwords, what you type into forms, cookies,
-            message bodies, URL query values, or fragments. Page paths remain
-            visible so requests can be compared; review a recording before
-            sharing it.
+            No sign-in and no upload. Passwords, form text, cookies, and message
+            contents are not saved. Review the file before sharing it.
           </p>
         </div>
 
         <details className="install-details">
-          <summary>Show the exact 60-second installation steps</summary>
+          <summary>Show the Chrome installation steps</summary>
           <ol>
             <li>Download the recorder ZIP, then unzip it.</li>
             <li>
@@ -420,13 +415,30 @@ export function ComparisonEvidenceDialog({
     ? comparison.details.filter((step) => step.state !== 'same')
     : comparison.steps;
   const technicalDetails = allTechnicalDetails.slice(0, 100);
+  const firstPlace = comparison.firstDifference
+    ? {
+        visible: 'what you clicked',
+        structure: 'the button on the page',
+        behaviour: 'what the page did next',
+        network: 'the step that starts the next page',
+        service: 'the outside tool the page opened',
+      }[comparison.firstDifference.layer]
+    : undefined;
+  const plainSummary =
+    comparison.outcome === 'matches'
+      ? 'GlassWeb followed the same action both times and did not find a meaningful change.'
+      : comparison.outcome === 'unknown'
+        ? 'The second file was not clear enough, so GlassWeb stopped instead of guessing.'
+        : firstPlace
+          ? `The action stayed the same until ${firstPlace}. That is the first place GlassWeb saw a change.`
+          : 'GlassWeb found a difference between the two files.';
 
   return (
     <ModalShell
-      description="The two recordings are aligned by stable browser-visible identities, not regenerated recording IDs."
+      description="GlassWeb compares the same action twice and stops at the first meaningful change. It will not guess beyond what the files show."
       eyebrow={
         <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
-          <GitCompareArrows className="size-3" /> Before / after proof
+          <GitCompareArrows className="size-3" /> Before / after
         </div>
       }
       footer={
@@ -440,13 +452,13 @@ export function ComparisonEvidenceDialog({
               onOpenXray();
             }}
           >
-            Open current X-ray <ArrowRight data-icon="inline-end" />
+            Open advanced view <ArrowRight data-icon="inline-end" />
           </Button>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title={comparison.headline}
+      title="How GlassWeb reached this answer"
       wide
     >
       <>
@@ -458,62 +470,66 @@ export function ComparisonEvidenceDialog({
                 ? 'Cannot compare yet'
                 : 'Difference found'}
           </span>
-          <p>{comparison.summary}</p>
+          <p>{plainSummary}</p>
         </div>
 
-        <ol className="comparison-evidence-list">
-          {comparison.steps.map((step, index) => (
-            <li className={`is-${step.state}`} key={step.key}>
-              <span className="comparison-evidence-number">{index + 1}</span>
-              <div>
-                <small>{stateLabel[step.state]}</small>
-                <strong>
-                  {step.before?.humanLabel ??
-                    step.after?.humanLabel ??
-                    step.layer}
-                </strong>
-                <p>{step.humanSummary}</p>
-                {step.evidenceWarning || step.timingWarning ? (
-                  <p className="comparison-evidence-warning">
-                    {step.evidenceWarning ?? step.timingWarning}
-                  </p>
-                ) : null}
-              </div>
-              <dl>
-                <div>
-                  <dt>Before</dt>
-                  <dd>{step.expected}</dd>
-                </div>
-                <div>
-                  <dt>After</dt>
-                  <dd>{step.actual}</dd>
-                </div>
-              </dl>
-            </li>
-          ))}
-        </ol>
-
         <details className="technical-details">
-          <summary>Technical details</summary>
-          <div className="comparison-technical-list">
-            {technicalDetails.map((step) => (
-              <div key={`technical-${step.key}`}>
-                <span>{step.layer}</span>
-                <code>{step.before?.technicalLabel ?? 'Not recorded'}</code>
-                <ArrowRight aria-hidden="true" />
-                <code>{step.after?.technicalLabel ?? 'Not recorded'}</code>
-                <small>
-                  Evidence: {step.certainty} · Match: {step.matchConfidence}
-                </small>
-              </div>
-            ))}
-            {allTechnicalDetails.length > technicalDetails.length ? (
-              <p className="comparison-evidence-warning">
-                {allTechnicalDetails.length - technicalDetails.length} more
-                checkpoints are omitted here to keep the browser responsive. The
-                comparison verdict still evaluates all of them.
-              </p>
-            ) : null}
+          <summary>Show exact browser details</summary>
+          <div className="comparison-evidence-disclosure">
+            <ol className="comparison-evidence-list">
+              {comparison.steps.map((step, index) => (
+                <li className={`is-${step.state}`} key={step.key}>
+                  <span className="comparison-evidence-number">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <small>{stateLabel[step.state]}</small>
+                    <strong>
+                      {step.before?.humanLabel ??
+                        step.after?.humanLabel ??
+                        step.layer}
+                    </strong>
+                    <p>{step.humanSummary}</p>
+                    {step.evidenceWarning || step.timingWarning ? (
+                      <p className="comparison-evidence-warning">
+                        {step.evidenceWarning ?? step.timingWarning}
+                      </p>
+                    ) : null}
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Before</dt>
+                      <dd>{step.expected}</dd>
+                    </div>
+                    <div>
+                      <dt>After</dt>
+                      <dd>{step.actual}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ol>
+
+            <div className="comparison-technical-list">
+              {technicalDetails.map((step) => (
+                <div key={`technical-${step.key}`}>
+                  <span>{step.layer}</span>
+                  <code>{step.before?.technicalLabel ?? 'Not recorded'}</code>
+                  <ArrowRight aria-hidden="true" />
+                  <code>{step.after?.technicalLabel ?? 'Not recorded'}</code>
+                  <small>
+                    Evidence: {step.certainty} · Match: {step.matchConfidence}
+                  </small>
+                </div>
+              ))}
+              {allTechnicalDetails.length > technicalDetails.length ? (
+                <p className="comparison-evidence-warning">
+                  {allTechnicalDetails.length - technicalDetails.length} more
+                  recorded steps are omitted here to keep the browser
+                  responsive. The result still checks all of them.
+                </p>
+              ) : null}
+            </div>
           </div>
         </details>
       </>

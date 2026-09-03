@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  ArrowRight,
   Bot,
   Braces,
   ChevronDown,
@@ -37,6 +36,7 @@ import {
 import { CompareStory } from '@/components/glassweb/compare-story';
 import { RuntimeWeave } from '@/components/glassweb/runtime-weave';
 import { SimpleStory } from '@/components/glassweb/simple-story';
+import { WelcomeView } from '@/components/glassweb/welcome-view';
 import {
   CaptureDialog,
   ComparisonEvidenceDialog,
@@ -130,8 +130,8 @@ export function GlassWebApp() {
   const [focusId, setFocusId] = useState('checkout');
   const [selectedEntityId, setSelectedEntityId] = useState('visible-cta');
   const [experienceMode, setExperienceMode] = useState<
-    'compare' | 'simple' | 'xray'
-  >('compare');
+    'home' | 'compare' | 'simple' | 'xray'
+  >('home');
   const [xrayReturnMode, setXrayReturnMode] = useState<'simple' | 'compare'>(
     'simple',
   );
@@ -236,7 +236,9 @@ export function GlassWebApp() {
       const validLens =
         requestedLens &&
         availableLenses.some((candidate) => candidate.id === requestedLens);
-      if (requestedView === 'xray' || validLens) setExperienceMode('xray');
+      if (requestedView === 'compare') setExperienceMode('compare');
+      else if (requestedView === 'simple') setExperienceMode('simple');
+      else if (requestedView === 'xray' || validLens) setExperienceMode('xray');
       if (
         requestedFocus &&
         trace.focuses.some((candidate) => candidate.id === requestedFocus)
@@ -603,7 +605,7 @@ export function GlassWebApp() {
 
   return (
     <main
-      className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'simple' ? 'is-simple' : ''} ${experienceMode === 'compare' ? 'is-compare' : ''}`}
+      className={`glassweb-app flex min-h-screen flex-col bg-background text-foreground ${experienceMode === 'home' ? 'is-home' : ''} ${experienceMode === 'simple' ? 'is-simple' : ''} ${experienceMode === 'compare' ? 'is-compare' : ''}`}
     >
       <input
         accept=".json,.glassweb,.glassweb.json,application/json"
@@ -630,60 +632,31 @@ export function GlassWebApp() {
         type="file"
       />
 
-      {experienceMode === 'compare' ? (
+      {experienceMode === 'home' ? (
+        <WelcomeView onStart={() => setCaptureOpen(true)} />
+      ) : experienceMode === 'compare' ? (
         <>
           <header className="comparison-header">
-            <div className="glassweb-brand">
+            <button
+              aria-label="Back to GlassWeb home"
+              className="glassweb-brand comparison-brand-button"
+              onClick={() => setExperienceMode('home')}
+              type="button"
+            >
               <span className="glassweb-mark">
                 <ScanSearch className="size-4" />
               </span>
               <span className="simple-brand-copy">
                 <strong>GlassWeb</strong>
-                <small>Before vs after, explained.</small>
+                <small>Website actions, explained.</small>
               </span>
-            </div>
+            </button>
             <span className="comparison-header-context">
-              {afterTrace ? (
-                <>
-                  <b>Before</b> {check.baselineTrace.title}
-                  <ArrowRight aria-hidden="true" />
-                  <b>After</b> {afterTrace.title}
-                </>
-              ) : (
-                'Your recordings stay on this device'
-              )}
+              One click before. The same click after.
             </span>
-            <div className="comparison-header-actions">
-              {afterTrace ? (
-                <Button
-                  onClick={() => {
-                    showTrace(afterTrace, 'simple');
-                  }}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Explain one recording
-                </Button>
-              ) : null}
-              <Button
-                onClick={() => setCaptureOpen(true)}
-                size="sm"
-                variant="outline"
-              >
-                <CircleDot data-icon="inline-start" /> Record my website
-              </Button>
-              <Button
-                onClick={afterTrace ? startOwnComparison : resetDemoComparison}
-                size="sm"
-              >
-                {afterTrace ? (
-                  <Import data-icon="inline-start" />
-                ) : (
-                  <Sparkles data-icon="inline-start" />
-                )}
-                {afterTrace ? 'Use my recordings' : 'See example'}
-              </Button>
-            </div>
+            <span className="comparison-header-private">
+              Private on this device
+            </span>
           </header>
 
           <CompareStory
@@ -731,50 +704,31 @@ export function GlassWebApp() {
       ) : experienceMode === 'simple' ? (
         <>
           <header className="simple-header">
-            <div className="glassweb-brand">
+            <button
+              aria-label="Back to GlassWeb home"
+              className="glassweb-brand comparison-brand-button"
+              onClick={() => setExperienceMode('home')}
+              type="button"
+            >
               <span className="glassweb-mark">
                 <ScanSearch className="size-4" />
               </span>
               <span className="simple-brand-copy">
                 <strong>GlassWeb</strong>
-                <small>One click. One answer. Real proof.</small>
+                <small>One action. One plain answer.</small>
               </span>
-            </div>
+            </button>
             <span className="simple-example-label">
-              {trace.id.startsWith('demo-orbit-pricing')
-                ? 'Live example'
-                : 'Your recording'}
-              : {trace.title}
+              Explaining: {trace.title}
             </span>
             <div className="simple-header-actions">
-              <Button
-                onClick={() => {
-                  const nextFocus = getFocus(trace, focusId);
-                  setCheck(createGlassWebCheck(trace, nextFocus));
-                  setHasBeforeReference(true);
-                  setAfterTrace(null);
-                  setIsDemoComparison(false);
-                  setExperienceMode('compare');
-                }}
-                size="sm"
-                variant="outline"
-              >
-                <ArrowRight data-icon="inline-start" /> Compare after an edit
-              </Button>
               <Button
                 className="simple-open-action"
                 onClick={() => fileInputRef.current?.click()}
                 size="sm"
-                variant="ghost"
+                variant="outline"
               >
-                <Import data-icon="inline-start" /> Open a recording
-              </Button>
-              <Button
-                className="simple-capture-action"
-                onClick={() => setCaptureOpen(true)}
-                size="sm"
-              >
-                <CircleDot data-icon="inline-start" /> Record my website
+                <Import data-icon="inline-start" /> Open another file
               </Button>
             </div>
           </header>

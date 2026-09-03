@@ -2,24 +2,14 @@
 
 import {
   ArrowRight,
-  Bot,
-  CalendarClock,
   CheckCircle2,
   Copy,
-  Eye,
-  Mail,
-  MousePointerClick,
-  Play,
   ReceiptText,
-  ScanSearch,
-  Send,
   Sparkles,
 } from 'lucide-react';
-import { useState } from 'react';
 
-import { PageSurface } from '@/components/glassweb/page-surface';
 import { Button } from '@/components/ui/button';
-import { certaintyCounts, getEntityMap } from '@/lib/glassweb/trace-utils';
+import { getEntityMap } from '@/lib/glassweb/trace-utils';
 import type {
   GlassWebTrace,
   TraceFocus,
@@ -228,11 +218,36 @@ const friendlyStories: Record<string, FriendlyStory> = {
   },
 };
 
+const brokenCheckoutStory: FriendlyStory = {
+  shortLabel: 'Start Pro',
+  question: 'What happened after someone clicked Start Pro?',
+  answer:
+    'The Start Pro button worked. The problem appeared when checkout returned an error.',
+  why: 'This shows where the problem appeared. It does not pretend to know which line of code caused it.',
+  steps: [
+    {
+      label: 'You did',
+      title: 'Clicked Start Pro',
+      detail: 'The button received the click.',
+    },
+    {
+      label: 'The website did',
+      title: 'Tried to start checkout',
+      detail: 'The next step began normally.',
+    },
+    {
+      label: 'What came back',
+      title: 'Checkout returned an error',
+      detail: 'This is where the action stopped.',
+    },
+  ],
+};
+
 const layerLabels: Record<TraceLayer, string> = {
   visible: 'You see',
   structure: 'The page uses',
   behaviour: 'The site does',
-  network: 'It sends',
+  network: 'The website does',
   service: 'It reaches',
 };
 
@@ -257,7 +272,7 @@ function genericStory(trace: GlassWebTrace, focus: TraceFocus): FriendlyStory {
         visible: 'This is the part of the page you used.',
         structure: 'This is the page part behind what you saw.',
         behaviour: 'The page reacted to your action.',
-        network: 'A browser request happened during this action.',
+        network: 'The website tried its next step.',
         service: 'This is the destination the browser contacted.',
       }[entity!.layer],
     }));
@@ -267,8 +282,13 @@ function genericStory(trace: GlassWebTrace, focus: TraceFocus): FriendlyStory {
   );
   const request = entities.find((entity) => entity?.layer === 'network');
   const service = entities.find((entity) => entity?.layer === 'service');
-  const answer =
-    request && service
+  const requestStatus = request?.attributes?.status;
+  const requestFailed =
+    request?.attributes?.failed === true ||
+    (typeof requestStatus === 'number' && requestStatus >= 400);
+  const answer = requestFailed
+    ? `GlassWeb saw “${surface?.humanLabel ?? focus.label}”. The problem appeared when the website tried the next step and got an error.`
+    : request && service
       ? `After “${surface?.humanLabel ?? focus.label}”, the page contacted ${service.humanLabel}. GlassWeb saw the request happen nearby; it cannot prove the click caused it.`
       : request
         ? `After “${surface?.humanLabel ?? focus.label}”, the browser sent ${request.humanLabel}. No final service was identified.`
@@ -278,215 +298,102 @@ function genericStory(trace: GlassWebTrace, focus: TraceFocus): FriendlyStory {
     shortLabel: focus.label,
     question: focus.question,
     answer,
-    why: request
-      ? 'You can hand this bounded observation to a coding agent to explain what to inspect, without pretending one recording proves a break.'
-      : 'The missing connection is useful too: it tells you what this recording can and cannot explain.',
+    why: requestFailed
+      ? 'This narrows down where to look without pretending one website action can identify the exact line of broken code.'
+      : request
+        ? 'You can hand this bounded observation to a coding agent to explain what to inspect, without pretending one recording proves a break.'
+        : 'The missing connection is useful too: it tells you what this recording can and cannot explain.',
     steps,
   };
 }
 
-const focusIcons = [MousePointerClick, Eye, CalendarClock, Send, Bot, Mail];
-
-export function SimpleStory({
-  trace,
-  focus,
-  onChooseFocus,
-  onSelectEntity,
-  onOpenEvidence,
-  onOpenProof,
-  onReplay,
-  onCopyBrief,
-}: SimpleStoryProps) {
-  const [showAll, setShowAll] = useState(false);
-  const isDemo = trace.id === 'demo-orbit-pricing';
+export function SimpleStory(props: SimpleStoryProps) {
+  const {
+    trace,
+    focus,
+    onChooseFocus,
+    onOpenEvidence,
+    onOpenProof,
+    onCopyBrief,
+  } = props;
+  const isDemo = trace.id.startsWith('demo-orbit-pricing');
   const story =
+    (trace.id.endsWith('-broken') && focus.id === 'checkout'
+      ? brokenCheckoutStory
+      : undefined) ??
     (isDemo ? friendlyStories[focus.id] : undefined) ??
     genericStory(trace, focus);
-  const counts = certaintyCounts(trace, focus);
-  const proofParts = [
-    counts.observed > 0
-      ? `${counts.observed} ${counts.observed === 1 ? 'step was' : 'steps were'} seen directly`
-      : '',
-    counts.correlated > 0
-      ? `${counts.correlated} ${counts.correlated === 1 ? 'is a timing match' : 'are timing matches'}`
-      : '',
-    counts.inferred > 0
-      ? `${counts.inferred} ${counts.inferred === 1 ? 'is likely' : 'are likely'}`
-      : '',
-    counts.unknown > 0
-      ? `${counts.unknown} ${counts.unknown === 1 ? 'is still unclear' : 'are still unclear'}`
-      : '',
-  ].filter(Boolean);
-  const proofLine = `${proofParts.join('. ')}.`;
-  const demoOrder = [
-    'checkout',
-    'price',
-    'billing',
-    'analytics',
-    'ai',
-    'newsletter',
-  ];
-  const orderedFocuses = isDemo
-    ? [...trace.focuses].sort(
-        (left, right) =>
-          demoOrder.indexOf(left.id) - demoOrder.indexOf(right.id),
-      )
-    : trace.focuses;
-  const visibleFocuses = showAll ? orderedFocuses : orderedFocuses.slice(0, 6);
 
   return (
-    <div className="simple-story">
-      <section className="simple-hero">
-        <div>
-          <p className="simple-kicker">
-            <Sparkles aria-hidden="true" /> No DevTools required
-          </p>
-          <h1>Understand one recording, without DevTools.</h1>
-          <p>
-            GlassWeb turns one recorded action into a plain-English answer and
-            proof. Made an edit? Compare it with another recording.
-          </p>
+    <div className="plain-story-page">
+      <section className="plain-story-heading">
+        <p>
+          <Sparkles aria-hidden="true" /> GlassWeb followed your action
+        </p>
+        <h1>{story.question}</h1>
+      </section>
+
+      <section className="plain-story-card" key={focus.id}>
+        <div className="plain-story-answer">
+          <small>Plain answer</small>
+          <h2 aria-live="polite">{story.answer}</h2>
+          <p>{story.why}</p>
         </div>
-        <div className="simple-promise">
-          <CheckCircle2 aria-hidden="true" />
-          <span>
-            <strong>Answer first. Proof underneath.</strong>
-            Nothing is invented to fill a gap.
-          </span>
+
+        <ol className="plain-story-path" aria-label="What happened next">
+          {story.steps.map((step, index) => (
+            <li key={`${step.label}-${step.title}`}>
+              <span>{index + 1}</span>
+              <div>
+                <small>{step.label}</small>
+                <strong>{step.title}</strong>
+                <p>{step.detail}</p>
+              </div>
+              {index < story.steps.length - 1 ? (
+                <ArrowRight aria-hidden="true" />
+              ) : (
+                <CheckCircle2 aria-hidden="true" />
+              )}
+            </li>
+          ))}
+        </ol>
+
+        <div className="plain-story-actions">
+          <Button onClick={onCopyBrief} size="lg">
+            <Copy data-icon="inline-start" /> Copy this for my coding AI
+          </Button>
+          <button onClick={onOpenEvidence} type="button">
+            <ReceiptText aria-hidden="true" /> See how GlassWeb knows
+          </button>
         </div>
       </section>
 
-      <a className="skip-to-answer" href="#glassweb-answer">
-        Skip to the answer
-      </a>
-
-      <div className="simple-workspace">
-        <aside className="simple-questions" aria-label="Questions to explore">
+      {trace.focuses.length > 1 ? (
+        <details className="plain-story-more">
+          <summary>Explain a different thing I did</summary>
           <div>
-            <p className="simple-section-label">Choose one question</p>
-            <h2>What should GlassWeb explain?</h2>
-          </div>
-
-          <div className="simple-question-list">
-            {visibleFocuses.map((candidate, index) => {
-              const Icon = focusIcons[index] ?? ScanSearch;
-              const content =
-                (isDemo ? friendlyStories[candidate.id] : undefined) ??
-                genericStory(trace, candidate);
-              return (
+            {trace.focuses
+              .filter((candidate) => candidate.id !== focus.id)
+              .map((candidate) => (
                 <button
-                  aria-pressed={candidate.id === focus.id}
-                  className="simple-question"
                   key={candidate.id}
                   onClick={() => onChooseFocus(candidate.id)}
                   type="button"
                 >
-                  <span className="simple-question-icon">
-                    <Icon aria-hidden="true" />
-                  </span>
-                  <span>
-                    <small>{content.shortLabel}</small>
-                    <strong>{content.question}</strong>
-                  </span>
-                  <ArrowRight aria-hidden="true" />
+                  {candidate.question} <ArrowRight aria-hidden="true" />
                 </button>
-              );
-            })}
-            {trace.focuses.length > 6 ? (
-              <button
-                className="simple-question-more"
-                onClick={() => setShowAll((current) => !current)}
-                type="button"
-              >
-                {showAll
-                  ? 'Show fewer'
-                  : `Show ${trace.focuses.length - 6} more`}
-              </button>
-            ) : null}
-          </div>
-        </aside>
-
-        <section className="simple-answer" id="glassweb-answer">
-          <div className="simple-answer-top">
-            <div className="simple-answer-copy" key={focus.id}>
-              <p className="simple-section-label">The short answer</p>
-              <p className="simple-current-question">{story.question}</p>
-              <h2 aria-live="polite">{story.answer}</h2>
-              <div className="simple-why">
-                <Sparkles aria-hidden="true" />
-                <div>
-                  <strong>Why you care</strong>
-                  <p>{story.why}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="simple-page-preview">
-              <div className="simple-page-label">
-                <span>{isDemo ? 'Interactive example' : 'Your recording'}</span>
-                <strong>Click anything highlighted</strong>
-              </div>
-              <PageSurface
-                aiMode={focus.id === 'ai'}
-                focus={focus}
-                onSelectEntity={onSelectEntity}
-                trace={trace}
-              />
-            </div>
-          </div>
-
-          <div className="simple-steps">
-            <p className="simple-section-label">What happened</p>
-            <div className="simple-step-list" key={`steps-${focus.id}`}>
-              {story.steps.map((step, index) => (
-                <div
-                  className="simple-step"
-                  key={`${step.label}-${step.title}`}
-                >
-                  <span className="simple-step-number">{index + 1}</span>
-                  <small>{step.label}</small>
-                  <strong>{step.title}</strong>
-                  <p>{step.detail}</p>
-                  {index < story.steps.length - 1 ? (
-                    <ArrowRight
-                      aria-hidden="true"
-                      className="simple-step-arrow"
-                    />
-                  ) : null}
-                </div>
               ))}
-            </div>
           </div>
+        </details>
+      ) : null}
 
-          <div className="simple-proof-bar">
-            <div>
-              <CheckCircle2 aria-hidden="true" />
-              <span>
-                <strong>GlassWeb is showing its confidence.</strong>
-                {proofLine}
-              </span>
-            </div>
-            <div className="simple-proof-actions">
-              <Button onClick={onCopyBrief} size="lg">
-                <Copy data-icon="inline-start" /> Copy proof for my AI
-              </Button>
-              <Button onClick={onReplay} size="lg" variant="outline">
-                <Play data-icon="inline-start" /> Watch it happen
-              </Button>
-              <Button onClick={onOpenEvidence} size="lg" variant="outline">
-                <ReceiptText data-icon="inline-start" /> How do you know?
-              </Button>
-              <button
-                className="simple-xray-link"
-                onClick={onOpenProof}
-                type="button"
-              >
-                Open full X-ray <ArrowRight aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
+      <button
+        className="plain-story-advanced"
+        onClick={onOpenProof}
+        type="button"
+      >
+        Open the advanced view
+      </button>
     </div>
   );
 }

@@ -145,34 +145,42 @@ test('the page probe distinguishes opaque completion from transport failure', as
   }
 });
 
-test('the default experience shows the first before/after difference before the X-ray', async () => {
+test('the default experience teaches the product before showing technical detail', async () => {
   const app = await readFile(
     resolve(root, 'components/glassweb/glassweb-app.tsx'),
+    'utf8',
+  );
+  const welcome = await readFile(
+    resolve(root, 'components/glassweb/welcome-view.tsx'),
     'utf8',
   );
   const comparison = await readFile(
     resolve(root, 'components/glassweb/compare-story.tsx'),
     'utf8',
   );
+  const compactWelcome = welcome.replace(/\s+/g, ' ');
 
-  assert.match(app, /'compare' \| 'simple' \| 'xray'/);
-  assert.match(app, />\('compare'\)/);
+  assert.match(app, /'home' \| 'compare' \| 'simple' \| 'xray'/);
+  assert.match(app, />\('home'\)/);
+  assert.match(app, /<WelcomeView/);
   assert.match(app, /<CompareStory/);
   for (const promise of [
-    'Before / after website check',
-    'First recorded difference',
-    'Copy fix packet for my AI',
-    'Record again to verify',
-    'Open full X-ray',
+    'See what your website did after you clicked.',
+    'Click this',
+    'Your button works. The problem appears when checkout starts.',
+    'Try it on my website',
+    'No sign-in. Runs on your device.',
   ]) {
-    assert.match(comparison, new RegExp(promise.replace('?', '\\?')));
+    assert.match(compactWelcome, new RegExp(promise.replace('?', '\\?')));
   }
-  assert.match(comparison, /Compared locally/);
-  assert.match(comparison, /No account\. No upload/);
-  assert.match(
-    comparison,
-    /const canSuggestFix = comparison\.outcome === 'broken'/,
+  assert.doesNotMatch(
+    welcome,
+    />[^<]*(?:HTTP|DOM|checkpoint|confidence|X-ray)[^<]*</i,
   );
+  assert.match(comparison, /Example — not your website/);
+  assert.match(comparison, /Copy this for my coding AI/);
+  assert.match(comparison, /See how GlassWeb knows/);
+  assert.doesNotMatch(comparison, /Copy fix packet/);
 });
 
 test('the launch visual and recording fallback are release-ready', async () => {

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="./public/og.png" alt="GlassWeb — Find the first break" width="100%" />
+  <img src="./public/og.png" alt="GlassWeb — See what your website did after you clicked" width="100%" />
 </p>
 
 <h1 align="center">GlassWeb</h1>
 
-<p align="center"><strong>Record one action before and after an edit. Find the first browser-visible difference.</strong></p>
+<p align="center"><strong>Click one thing. Get one plain answer about what your website did next.</strong></p>
 
 <p align="center">
   <a href="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml"><img alt="Verify" src="https://github.com/zaiqltd/glassweb/actions/workflows/ci.yml/badge.svg" /></a>
@@ -13,22 +13,23 @@
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-63e7f4" />
 </p>
 
-GlassWeb is a local-first before/after debugger for people who build websites with AI:
+GlassWeb is a local-first website explainer for people who build with Cursor, Claude, Codex, and other coding AIs:
 
-> **The checkout request now fails.**<br>
-> Before it returned 201. After it returned 500. The earlier recorded checkpoints still match.
+> **Your button worked. The problem appeared when checkout started.**
 
-Record a button or form before an edit. Record the same action afterward. GlassWeb aligns the two browser-visible journeys, shows where they first split, and copies a short, ready-to-paste summary of only what changed for Cursor, Claude, Codex, or another coding agent.
+Do one confusing thing on a website—a button click, form submission, or checkout attempt. GlassWeb follows what the browser saw next, turns it into a short human explanation, and prepares a bounded note you can paste into your coding AI.
 
-The default view is the result—not a dashboard: one verdict, the before and after recordings, five aligned checkpoints, and the first difference. No DevTools vocabulary is required. When you want the technical proof, GlassWeb unfolds the current recording into the same five layers:
+The first screen is a safe interactive example. Click **Start Pro** and GlassWeb reveals only three steps:
 
 ```text
-Visible  →  Structure  →  Behaviour  →  Network  →  Service
+You clicked  →  The website tried checkout  →  Checkout returned an error
 ```
 
-The complexity is still there. It is earned through disclosure: **Verdict → First difference → Before/after path → Technical proof → Full X-ray.**
+No account. Nothing uploaded. No DevTools vocabulary. Exact browser details and the full five-layer inspection exist, but only appear when someone deliberately asks for them.
 
 No city metaphor. No force-directed spaghetti. No AI filling gaps with fiction.
+
+<p align="center"><a href="https://glassweb.cae1.chatgpt.site/"><strong>Try the live demo — no sign-in →</strong></a></p>
 
 ## See the magic trick
 
@@ -41,34 +42,28 @@ npm run demo
 
 Open [http://localhost:3000](http://localhost:3000), then:
 
-1. Read the checkout verdict: the working request returned `201`; the after-deploy request returned `500`.
-2. Compare the synchronized **Before** and **After** page frames.
-3. Follow the aligned path to the first changed checkpoint.
-4. Copy the bounded fix packet or open **Technical proof**.
-5. Choose **Show the repaired run** and watch the result return to **Still matches**.
-6. Open **Full X-ray** only when you want every recorded detail.
+1. Click **Start Pro** in the fake website.
+2. Watch GlassWeb follow the click in three plain steps.
+3. Read the answer: the button worked; the problem appeared when checkout started.
+4. Choose **Try it on my website** only when you are ready to use the Chrome extension.
 
-The bundled Orbit pricing session is deterministic and offline. It needs no account, API key, model provider, or captured browsing data.
+The example is deterministic and offline. It needs no account, API key, model provider, or captured browsing data.
 
 ## What is working today
 
-| Surface                    | What a normal person gets                                                          | Status   |
-| -------------------------- | ---------------------------------------------------------------------------------- | -------- |
-| Before/after verdict       | **Still matches**, **Changed**, **Needs attention**, or **Cannot compare**         | Default  |
-| First recorded difference  | The earliest affected stage, prioritizing a broken saved result within that stage  | Working  |
-| Semantic action pairing    | Matches regenerated recordings by stable browser identities, never raw IDs         | Working  |
-| Aligned five-step path     | Action → page control → page reaction → request → destination                      | Working  |
-| Repair verification        | A third recording can visibly return to **Still matches**                          | Working  |
-| Safe coding-agent handoff  | Broken results get a bounded fix packet; other outcomes get comparison proof only  | Working  |
-| Portable before reference  | Saves the selected action and browser success checkpoint as `.glassweb-check.json` | Working  |
-| Focused explanation replay | Reveals the shared path and split without rerunning the website                    | Working  |
-| Single-recording answer    | Explains one recording when comparison is not needed                               | Working  |
-| Technical proof / X-ray    | Preserves aligned evidence and the complete five-layer inspection                  | Optional |
-| Chrome recorder            | Watches one active page with minimal permissions and safe defaults                 | Alpha    |
+| Surface                   | What a normal person gets                                                             | Status   |
+| ------------------------- | ------------------------------------------------------------------------------------- | -------- |
+| Click-it-yourself example | Learns what GlassWeb does by using it, with no setup or sign-in                       | Default  |
+| Single-action answer      | One plain answer and a short visual path for the thing they just did                  | Working  |
+| Safe coding-AI handoff    | A bounded, ready-to-paste note that separates what was seen from what remains unknown | Working  |
+| Before/after edit check   | Finds the first meaningful change when the same action is saved twice                 | Working  |
+| Exact browser details     | Reveals request, status, certainty, and matching details only on demand               | Optional |
+| Five-layer advanced view  | Keeps the full browser-visible inspection for people who need it                      | Optional |
+| Chrome extension          | Watches one active page with minimal permissions and safe defaults                    | Alpha    |
 
 GlassWeb does not claim server-side causality it cannot see. In a normal capture, the recorder can prove that an interaction happened and that a request happened nearby. Without a reliable initiator stack, their edge is **correlated**, never silently promoted to **observed**.
 
-## Record your own website
+## Try it on your own website
 
 Build the downloadable recorder:
 
@@ -78,16 +73,16 @@ npm run package:recorder
 
 For local development, open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository’s `extension/` folder.
 
-Then create a before reference:
+Then explain one action:
 
-1. Open the working website in desktop Chrome.
+1. Open the website in desktop Chrome.
 2. Open GlassWeb Recorder and choose **Start watching**.
-3. Do the one important thing: begin checkout, submit a lead form, or save a setting.
+3. Do the one thing you want explained: begin checkout, submit a lead form, or save a setting.
 4. Stop and save the recording.
-5. In GlassWeb choose **Use my recordings**, replace the example **Before**, and select the action.
-6. Save the before reference if you want a portable `.glassweb-check.json` file.
-7. Make the edit or deploy, record the same action again, and open it as **After**.
-8. Copy the first difference to your coding agent, repair it, then record once more to verify.
+5. In GlassWeb choose **Try it on my website**, then **Open my GlassWeb file**.
+6. Read the plain answer or copy it to your coding AI.
+
+The before/after checker remains available for planned regression checks: save the important action while it works, make the edit, then save the same action again. GlassWeb keeps uncertain matches and incomplete captures explicit instead of manufacturing a confident answer.
 
 The extension asks for `activeTab`, `scripting`, `storage`, and `downloads` only. There is no `<all_urls>` access and no debugger permission.
 

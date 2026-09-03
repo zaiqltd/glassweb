@@ -1,8 +1,8 @@
 {
   "name": "glassweb",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Compare one website action before and after an edit, find the first browser-visible difference, and copy a bounded fix packet.",
+  "description": "Turn one confusing website action into a plain answer and a safe note for your coding AI.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

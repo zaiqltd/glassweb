@@ -2,6 +2,23 @@
 
 All notable changes to GlassWeb are documented here. The project follows semantic versioning once the public API stabilizes.
 
+## 0.5.0 — 2026-09-03
+
+### Changed
+
+- Replaced the technical-result landing screen with a click-it-yourself website example that explains GlassWeb by using it.
+- Reduced the default experience to one familiar action, three plain steps, one answer, and one next action.
+- Removed status codes, recording terminology, evidence labels, replay controls, X-ray language, and the paid roadmap from the default path.
+- Rebuilt single-action results around one question, one answer, a compact visual path, and one coding-AI handoff.
+- Rebuilt before/after results around two plainly labelled outcomes and moved exact browser details behind a second deliberate disclosure.
+- Simplified the Chrome extension handoff and made its experimental desktop-only setup explicit.
+- Added direct `?view=simple` and `?view=compare` routes for deterministic QA and advanced deep links.
+
+### Fixed
+
+- Stopped the broken checkout example from opening an unrelated pricing explanation.
+- Kept every first screen within a 1280×720 desktop viewport and the interactive landing screen within a 390×844 mobile viewport.
+
 ## 0.4.0 — 2026-09-03
 
 ### Added
