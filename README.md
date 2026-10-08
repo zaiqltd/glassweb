@@ -13,6 +13,8 @@
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-63e7f4" />
 </p>
 
+Built by [ZAIQ](https://zaiq.ai/work#glassweb), a South African AI engineering studio.
+
 GlassWeb is a local-first website explainer for people who build with Cursor, Claude, Codex, and other coding AIs:
 
 > **Your button worked. The problem appeared when checkout started.**
